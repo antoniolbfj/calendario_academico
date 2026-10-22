@@ -224,16 +224,11 @@ function createCalendarMenu_() {
     : Object.keys(DB_SCHEMA).every(function(name){ return !!active.getSheetByName(name); });
 
   const ui = SpreadsheetApp.getUi();
-  if (!ready) {
-    ui.createMenu('Gerador de Calendários')
-      .addItem('Instalar sistema', 'iniciarInstalacao')
-      .addToUi();
-    return true;
-  }
-
-  ui.createMenu('Calendário')
-    .addItem('Abrir sistema', 'abrirSistemaInstalado')
-    .addToUi();
+  const menu = ui.createMenu('Calendário')
+    .addItem('Preparar planilha instaladora', 'prepararPlanilhaInstaladora')
+    .addItem('Instalar sistema', 'iniciarInstalacao');
+  if (ready) menu.addSeparator().addItem('Abrir sistema', 'abrirSistemaInstalado');
+  menu.addToUi();
 
   return true;
 }

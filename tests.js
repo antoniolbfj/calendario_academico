@@ -205,6 +205,9 @@ function getSystemTests_() {
     testR33HelpAlertBridgeContract_,
     testR34AuthenticatedHtmlInjectionRegression_,
     testR35InstallerCopyGuardContract_,
+    testInstallerMenuOrder_,
+    testInstallerPreparationSafety_,
+    testInstallerCopyInstallationSafety_,
     testR35InstallerCoreDefaultsContract_,
     testR36InstallerUxContract_,
     testR37OptionalFeaturesContract_,
@@ -796,12 +799,110 @@ function testR34AuthenticatedHtmlInjectionRegression_() {
 
 /** R35: a planilha matriz nunca pode executar a instalação; somente uma cópia com ID diferente. */
 function testR35InstallerCopyGuardContract_() {
-  const guard=String(assertInstallerIsCopy_),prepare=String(prepareOfficialInstallerTemplate),landing=String(refreshInstallerLandingSheet_);
+  const guard=String(assertInstallerIsCopy_),prepare=String(prepareOfficialInstallerTemplate),wizard=HtmlService.createHtmlOutputFromFile('installer-ui').getContent();
   assertTrue_(guard.indexOf('getInstallerTemplateId_')!==-1&&guard.indexOf('spreadsheet.getId()')!==-1,'Trava deve comparar o ID atual com o ID persistido da matriz.');
   assertTrue_(guard.indexOf('INSTALLER_TEMPLATE_FORBIDDEN')!==-1,'Tentativa de instalação na matriz deve possuir erro estável e explícito.');
   assertTrue_(prepare.indexOf('CAL_INSTALLER_TEMPLATE_ID')!==-1||prepare.indexOf('INSTALLER_TEMPLATE_ID_RANGE')!==-1,'Preparação da matriz deve persistir sua identidade na própria planilha para sobreviver à cópia.');
   assertTrue_(prepare.indexOf("assignScript('iniciarInstalacao')")!==-1||String(installerUpsertActionImage_).indexOf('assignScript')!==-1,'Botão principal deve chamar apenas o entrypoint público do instalador.');
-  assertTrue_(landing.indexOf('Modelo oficial')!==-1&&landing.indexOf('Cópia detectada')!==-1,'A landing deve distinguir visualmente matriz e cópia.');
+  assertTrue_(wizard.indexOf('if(state.isTemplate)')!==-1&&wizard.indexOf('Faça uma cópia para instalar')!==-1,'O assistente deve distinguir a matriz e orientar a instalação em uma cópia.');
+}
+
+function installerFunctionWithBindings_(fn,bindings) {
+  const names=Object.keys(bindings);
+  return Function.apply(null,names.concat('return ('+String(fn)+');')).apply(null,names.map(function(name){return bindings[name];}));
+}
+
+function testInstallerMenuOrder_() {
+  Object.keys(INSTALLATION_STATE).forEach(function(key){
+    const entries=[],menu={addItem:function(label,handler){entries.push({label:label,handler:handler});return menu;},addSeparator:function(){return menu;},addToUi:function(){menu.added=true;}};
+    const ui={createMenu:function(name){menu.name=name;return menu;}};
+    const create=installerFunctionWithBindings_(createCalendarMenu_,{
+      SpreadsheetApp:{getActiveSpreadsheet:function(){return {};},getUi:function(){return ui;}},
+      getInstallationState_:function(){return INSTALLATION_STATE[key];},INSTALLATION_STATE:INSTALLATION_STATE
+    });
+    assertTrue_(create(),'Menu deve ser criado no estado '+key+'.');
+    assertEquals_('Calendário',menu.name,'O nome do menu deve ser estável.');
+    assertEquals_('Preparar planilha instaladora',entries[0].label,'Preparação deve ser a primeira opção.');
+    assertEquals_('prepararPlanilhaInstaladora',entries[0].handler,'Preparação deve usar o comando com orientação ao usuário.');
+    assertEquals_('Instalar sistema',entries[1].label,'Instalação deve ser a segunda opção.');
+    assertEquals_('iniciarInstalacao',entries[1].handler,'Instalação deve manter o assistente protegido.');
+    assertEquals_(key==='READY'?3:2,entries.length,'Abertura deve continuar disponível somente após a instalação.');
+    if(key==='READY')assertEquals_('abrirSistemaInstalado',entries[2].handler,'Abertura existente deve ser preservada.');
+    assertTrue_(menu.added,'Menu deve ser publicado na interface.');
+  });
+}
+
+function testInstallerPreparationSafety_() {
+  let state=INSTALLATION_STATE.NOT_INSTALLED,managed=false,available=true,released=0;
+  const changes=[],values={},properties={},ranges={};
+  const sheet={getSheetId:function(){return 1;},getRange:function(a1){return {setValue:function(value){changes.push('value');values[a1]=value;}};},hideRows:function(){changes.push('hide');}};
+  const ss={getId:function(){return 'MATRIX';},getSheetByName:function(){return managed?{}:null;},getSheets:function(){return [sheet];},setNamedRange:function(name,range){changes.push('range');ranges[name]=range;},rename:function(name){changes.push('rename');ss.name=name;}};
+  const prepare=installerFunctionWithBindings_(prepareOfficialInstallerTemplate,{
+    SpreadsheetApp:{getActiveSpreadsheet:function(){return ss;}},
+    LockService:{getScriptLock:function(){return {tryLock:function(){return available;},releaseLock:function(){released++;}};}},
+    getInstallationState_:function(){return state;},INSTALLATION_STATE:INSTALLATION_STATE,DB_SCHEMA:{_SYSTEM:[]},
+    installerSheetIsBlank_:function(){return true;},getInstallerSheet_:function(){changes.push('sheet');return sheet;},
+    ensureInstallerSpreadsheetTimeZone_:function(){changes.push('timezone');},INSTALLER_TIMEZONE:INSTALLER_TIMEZONE,
+    formatInstallerLandingSheet_:function(){changes.push('format');},refreshInstallerLandingSheet_:function(){changes.push('refresh');},
+    INSTALLER_DISTRIBUTION_ID:INSTALLER_DISTRIBUTION_ID,INSTALLER_TEMPLATE_ID_RANGE:INSTALLER_TEMPLATE_ID_RANGE,
+    INSTALLER_DISTRIBUTION_RANGE:INSTALLER_DISTRIBUTION_RANGE,INSTALLER_STATE_PROPERTY:INSTALLER_STATE_PROPERTY,
+    PropertiesService:{getScriptProperties:function(){return {setProperty:function(key,value){changes.push('property');properties[key]=value;}};}}
+  });
+  [INSTALLATION_STATE.READY,INSTALLATION_STATE.INSTALLING].forEach(function(value){
+    state=value;let message='';try{prepare();}catch(error){message=error.message;}
+    assertTrue_(message.indexOf('instalação ativa ou em andamento')!==-1,'Estado '+value+' deve impedir preparação mesmo sem tabelas.');
+    assertEquals_(0,changes.length,'Preparação bloqueada não pode alterar a planilha nem propriedades.');
+  });
+  state=INSTALLATION_STATE.NOT_INSTALLED;managed=true;
+  let message='';try{prepare();}catch(error){message=error.message;}
+  assertTrue_(message.indexOf('sem as tabelas do sistema')!==-1,'Tabelas existentes devem continuar protegidas mesmo sem estado READY.');
+  assertEquals_(0,changes.length,'Tabelas existentes não podem ser modificadas.');
+  assertEquals_(3,released,'Toda recusa após adquirir o lock deve liberá-lo.');
+  managed=false;available=false;message='';try{prepare();}catch(error){message=error.message;}
+  assertTrue_(message.indexOf('em andamento')!==-1,'Operação concorrente deve impedir preparação.');
+  assertEquals_(0,changes.length,'Lock indisponível não pode permitir alterações.');
+  assertEquals_(3,released,'Lock não adquirido não deve ser liberado.');
+  available=true;
+  assertTrue_(prepare().ok,'Planilha limpa e sem instalação deve poder ser preparada.');
+  assertEquals_('MATRIX',values.G14,'Preparação deve registrar o ID original da matriz.');
+  assertEquals_(INSTALLER_DISTRIBUTION_ID,values.H14,'Preparação deve preservar a identificação da distribuição.');
+  assertTrue_(!!ranges[INSTALLER_TEMPLATE_ID_RANGE]&&!!ranges[INSTALLER_DISTRIBUTION_RANGE],'Identificadores devem sobreviver à cópia por intervalos nomeados.');
+  assertEquals_(INSTALLATION_STATE.NOT_INSTALLED,properties[INSTALLER_STATE_PROPERTY],'Preparar não pode marcar o sistema como instalado.');
+  assertEquals_(4,released,'Preparação concluída deve liberar o lock.');
+}
+
+function testInstallerCopyInstallationSafety_() {
+  let templateId='',currentId='COPY',lockCount=0,state=INSTALLATION_STATE.NOT_INSTALLED;
+  const properties={},ss={getId:function(){return currentId;}};
+  const spreadsheetApp={getActiveSpreadsheet:function(){return ss;}};
+  const guard=installerFunctionWithBindings_(assertInstallerIsCopy_,{
+    SpreadsheetApp:spreadsheetApp,getInstallerTemplateId_:function(){return templateId;}
+  });
+  const begin=installerFunctionWithBindings_(beginInstallerInstallation,{
+    SpreadsheetApp:spreadsheetApp,assertInstallerIsCopy_:guard,
+    LockService:{getScriptLock:function(){lockCount++;return {tryLock:function(){return true;},releaseLock:function(){}};}},
+    getInstallationState_:function(){return state;},INSTALLATION_STATE:INSTALLATION_STATE,installerHasManagedData_:function(){return false;},
+    normalizeInstallerConfig_:function(payload){return payload;},Utilities:{getUuid:function(){return 'TEST';}},
+    installerReadNamedValue_:function(){return INSTALLER_DISTRIBUTION_ID;},INSTALLER_DISTRIBUTION_RANGE:INSTALLER_DISTRIBUTION_RANGE,
+    INSTALLER_DISTRIBUTION_ID:INSTALLER_DISTRIBUTION_ID,INSTALLER_PENDING_PROPERTY:INSTALLER_PENDING_PROPERTY,
+    INSTALLER_RUN_PROPERTY:INSTALLER_RUN_PROPERTY,INSTALLER_STATE_PROPERTY:INSTALLER_STATE_PROPERTY,
+    PropertiesService:{getScriptProperties:function(){return {setProperty:function(key,value){properties[key]=value;}};}},
+    getInstallerInstallationPlan:getInstallerInstallationPlan
+  });
+  const step=installerFunctionWithBindings_(runInstallerInstallationStep,{SpreadsheetApp:spreadsheetApp,assertInstallerIsCopy_:guard});
+  function blocked_(action,code){let message='';try{action();}catch(error){message=error.message;}assertTrue_(message.indexOf(code+':')===0,'Operação deve ser bloqueada com '+code+'.');}
+  [['','INSTALLER_TEMPLATE_NOT_PREPARED'],['COPY','INSTALLER_TEMPLATE_FORBIDDEN']].forEach(function(test){
+    templateId=test[0];blocked_(function(){begin({});},test[1]);blocked_(function(){step('TEST',1);},test[1]);
+    assertEquals_(0,Object.keys(properties).length,'Bloqueio deve ocorrer antes de gravar estado da instalação.');
+    assertEquals_(0,lockCount,'Identidade inválida deve ser recusada antes de iniciar a instalação.');
+  });
+  templateId='MATRIX';
+  assertTrue_(guard(ss),'Cópia preparada com ID diferente da matriz deve ser aceita.');
+  assertTrue_(begin({superuserEmail:'test@example.org'}).ok,'Somente a cópia preparada deve iniciar a instalação.');
+  assertEquals_(INSTALLATION_STATE.INSTALLING,properties[INSTALLER_STATE_PROPERTY],'Cópia válida deve entrar em instalação.');
+  const before=JSON.stringify(properties);state=INSTALLATION_STATE.READY;
+  blocked_(function(){begin({});},'INSTALLER_ALREADY_READY');
+  assertEquals_(before,JSON.stringify(properties),'Instalação ativa não pode ser reinstalada.');
 }
 
 /** R35: instalação nasce segura e o núcleo não depende da Gmail API/Google Cloud. */

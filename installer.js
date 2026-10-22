@@ -277,32 +277,54 @@ function getInstallerState() {
   };
 }
 
+function prepararPlanilhaInstaladora() {
+  const ui=SpreadsheetApp.getUi();
+  let result;
+  try{
+    result=prepareOfficialInstallerTemplate();
+  }catch(error){
+    const message=error&&error.message?error.message:'Não foi possível preparar a planilha instaladora.';
+    ui.alert('Preparação bloqueada',message,ui.ButtonSet.OK);
+    return {ok:false,message:message};
+  }
+  ui.alert('Planilha instaladora preparada','Este arquivo é o modelo original. Faça uma cópia em seu Google Drive e, na cópia, use Calendário → Instalar sistema. A instalação no modelo original é bloqueada.',ui.ButtonSet.OK);
+  return result;
+}
+
 function prepareOfficialInstallerTemplate() {
   const ss=SpreadsheetApp.getActiveSpreadsheet();
   if(!ss)throw new Error('Abra a planilha que será usada como modelo oficial.');
-  if(Object.keys(DB_SCHEMA).some(function(name){return !!ss.getSheetByName(name);})){ 
-    throw new Error('A preparação do modelo oficial só pode ser executada em uma planilha limpa, sem as tabelas do sistema.');
-  }
-  const sheets=ss.getSheets();
-  const nonBlank=sheets.filter(function(sheet){return !installerSheetIsBlank_(sheet);});
-  if(nonBlank.length>1)throw new Error('Use uma planilha limpa para preparar o instalador oficial.');
-  let sheet=getInstallerSheet_(ss,true);
-  ss.getSheets().slice().forEach(function(other){
-    if(other.getSheetId()===sheet.getSheetId())return;
-    if(!installerSheetIsBlank_(other))throw new Error('Existe conteúdo fora da aba de instalação. A preparação foi interrompida.');
-    ss.deleteSheet(other);
-  });
-  ensureInstallerSpreadsheetTimeZone_(ss,INSTALLER_TIMEZONE);
-  formatInstallerLandingSheet_(ss,sheet,'TEMPLATE');
-  sheet.getRange('G14').setValue(ss.getId());
-  sheet.getRange('H14').setValue(INSTALLER_DISTRIBUTION_ID);
-  ss.setNamedRange(INSTALLER_TEMPLATE_ID_RANGE,sheet.getRange('G14'));
-  ss.setNamedRange(INSTALLER_DISTRIBUTION_RANGE,sheet.getRange('H14'));
-  sheet.hideRows(14);
-  PropertiesService.getScriptProperties().setProperty(INSTALLER_STATE_PROPERTY,INSTALLATION_STATE.NOT_INSTALLED);
-  refreshInstallerLandingSheet_();
-  ss.rename('GERADOR DE CALENDÁRIOS — INSTALADOR');
-  return {ok:true,spreadsheetId:ss.getId(),distributionId:INSTALLER_DISTRIBUTION_ID};
+  const lock=LockService.getScriptLock();
+  if(!lock.tryLock(5000))throw new Error('Outra preparação ou instalação está em andamento. Aguarde a conclusão antes de tentar novamente.');
+  try{
+    const state=getInstallationState_(ss);
+    if(state===INSTALLATION_STATE.READY||state===INSTALLATION_STATE.INSTALLING){
+      throw new Error('Não é permitido preparar uma planilha que contém uma instalação ativa ou em andamento. Use uma planilha em branco.');
+    }
+    if(Object.keys(DB_SCHEMA).some(function(name){return !!ss.getSheetByName(name);})){
+      throw new Error('A preparação do modelo oficial só pode ser executada em uma planilha limpa, sem as tabelas do sistema.');
+    }
+    const sheets=ss.getSheets();
+    const nonBlank=sheets.filter(function(sheet){return !installerSheetIsBlank_(sheet);});
+    if(nonBlank.length>1)throw new Error('Use uma planilha limpa para preparar o instalador oficial.');
+    let sheet=getInstallerSheet_(ss,true);
+    ss.getSheets().slice().forEach(function(other){
+      if(other.getSheetId()===sheet.getSheetId())return;
+      if(!installerSheetIsBlank_(other))throw new Error('Existe conteúdo fora da aba de instalação. A preparação foi interrompida.');
+      ss.deleteSheet(other);
+    });
+    ensureInstallerSpreadsheetTimeZone_(ss,INSTALLER_TIMEZONE);
+    formatInstallerLandingSheet_(ss,sheet,'TEMPLATE');
+    sheet.getRange('G14').setValue(ss.getId());
+    sheet.getRange('H14').setValue(INSTALLER_DISTRIBUTION_ID);
+    ss.setNamedRange(INSTALLER_TEMPLATE_ID_RANGE,sheet.getRange('G14'));
+    ss.setNamedRange(INSTALLER_DISTRIBUTION_RANGE,sheet.getRange('H14'));
+    sheet.hideRows(14);
+    PropertiesService.getScriptProperties().setProperty(INSTALLER_STATE_PROPERTY,INSTALLATION_STATE.NOT_INSTALLED);
+    refreshInstallerLandingSheet_();
+    ss.rename('GERADOR DE CALENDÁRIOS — INSTALADOR');
+    return {ok:true,spreadsheetId:ss.getId(),distributionId:INSTALLER_DISTRIBUTION_ID};
+  }finally{lock.releaseLock();}
 }
 
 function formatInstallerLandingSheet_(ss,sheet,mode) {
