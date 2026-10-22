@@ -237,6 +237,9 @@ function getSystemTests_() {
     testSchoolDayPeriodScopedSummaryContract_,
     testSchoolDayTargetUiContract_,
     testSchoolDayPreviewFootnoteContract_,
+    testCompactSchoolDayFooterCounts_,
+    testCompactSchoolDayFooterSurfaceParity_,
+    testCompactSchoolDayFooterPageScope_,
     testUx1ModalArchitectureContract_,
     testUx2EventTypeFocusedCrudContract_,
     testUx3ThemeFocusedCrudContract_,
@@ -4572,8 +4575,89 @@ function testSchoolDayPreviewFootnoteContract_() {
   assertTrue_(code.indexOf('school.byMonth')!==-1,'Nota deve mostrar totais mensais oriundos da malha letiva.');
   assertTrue_(code.indexOf('school.periods')!==-1 && code.indexOf('schoolDayCount')!==-1,'Nota deve mostrar o total de cada período cadastrado.');
   assertTrue_(code.indexOf('school.total')!==-1 && code.indexOf('seventyFivePercentDate')!==-1,'Nota deve mostrar total agregado e data prevista de 75%.');
-  const preview=String(buildLivePreviewHtml_);
-  assertTrue_(preview.indexOf('schoolDayFootnoteHtml_(school)')!==-1,'Prévia e documento impresso devem consumir a mesma nota canônica.');
+  assertTrue_(String(buildPrintPages_).indexOf('schoolDayFootnoteForMonths_(school,group,eventTypes)')!==-1,'Prévia e documento impresso devem compor o resumo dos meses da página.');
+}
+
+function compactSchoolDayFooterFixture_() {
+  return {
+    school:{configured:true,completePeriods:6,total:12,seventyFivePercentDate:'2027-07-01',
+      dates:['2027-02-01','2027-02-02','2027-02-03','2027-02-04','2027-02-05','2027-02-06','2027-02-07','2027-02-08','2027-07-01','2027-08-02','2027-12-01','2027-12-02'],
+      byMonth:{'2027-02':8,'2027-07':1,'2027-08':1,'2027-12':2},
+      periods:[
+        {eventTypeId:'S1',title:'1º Semestre Letivo',startDate:'2027-02-01',endDate:'2027-07-01',complete:true,schoolDayCount:9},
+        {eventTypeId:'S2',title:'2º Semestre',startDate:'2027-08-02',endDate:'2027-12-02',complete:true,schoolDayCount:3},
+        {eventTypeId:'YEAR',title:'Anual',startDate:'2027-02-01',endDate:'2027-12-02',complete:true,schoolDayCount:12},
+        {eventTypeId:'OTHER',title:'Inscrições para o PROLIF 2027/1',startDate:'2027-02-01',endDate:'2027-02-03',complete:true,schoolDayCount:3},
+        {eventTypeId:'OTHER',title:'Aula inaugural CENID',startDate:'2027-02-04',endDate:'2027-02-04',complete:true,schoolDayCount:1},
+        {eventTypeId:'OTHER',title:'Aula inaugural CENID',startDate:'2027-02-05',endDate:'2027-02-05',complete:true,schoolDayCount:1}
+      ]},
+    types:[{id:'S1',code:'PERIODO_LETIVO_1_SEMESTRE'},{id:'S2',code:'PERIODO_LETIVO_2_SEMESTRE'},{id:'YEAR',code:'PERIODO_LETIVO_ANUAL'},{id:'OTHER',code:'DIVERSO'}]
+  };
+}
+
+function compactSchoolDayFooterRows_(html) {
+  return (html.match(/<tr data-school-summary-kind="[\s\S]*?<\/tr>/g)||[]).map(function(row){
+    return {kind:row.match(/data-school-summary-kind="([^"]+)"/)[1],month:row.match(/data-school-summary-month="([^"]+)"/)[1],
+      values:(row.match(/<td>[\s\S]*?<\/td>/g)||[]).map(function(cell){return Number(cell.replace(/<[^>]+>/g,''));})};
+  });
+}
+
+function testCompactSchoolDayFooterCounts_() {
+  const fixture=compactSchoolDayFooterFixture_(),school=fixture.school,before=JSON.stringify(fixture);
+  function footer(month){return schoolDayFootnoteHtml_(school,[month],fixture.types);}
+  const feb=footer('2027-02'),july=footer('2027-07'),december=footer('2027-12');
+  assertEquals_('2,1,1,1,1,1,1,8',compactSchoolDayFooterRows_(feb)[0].values.join(','),'Mensal deve contar cada dia da semana, inclusive sábado e domingo.');
+  assertEquals_('0,0,0,0,0,0,0,0',compactSchoolDayFooterRows_(footer('2027-03'))[0].values.join(','),'Mês sem aulas deve exibir todos os zeros.');
+  const julyRows=compactSchoolDayFooterRows_(july),decemberRows=compactSchoolDayFooterRows_(december);
+  assertEquals_('month,semester',julyRows.map(function(r){return r.kind;}).join(','),'Primeiro semestre deve fechar em julho, conforme a data cadastrada.');
+  assertEquals_('2,1,1,2,1,1,1,9',julyRows[1].values.join(','),'Semestre deve somar as datas de todo o período.');
+  assertEquals_('month,semester,year',decemberRows.map(function(r){return r.kind;}).join(','),'No encerramento devem constar mês, semestre e ano.');
+  assertEquals_('1,0,1,1,0,0,0,3',decemberRows[1].values.join(','),'Segundo semestre deve ter sua própria distribuição.');
+  assertEquals_('3,1,2,3,1,1,1,12',decemberRows[2].values.join(','),'Anual deve contar datas únicas, sem somar períodos sobrepostos.');
+  assertTrue_(july.indexOf('Acumulados até jul/2027: <strong>9 de 12 dias</strong>')!==-1,'Acumulado deve começar no primeiro dia letivo do ano.');
+  assertTrue_(december.indexOf('Acumulados até dez/2027: <strong>12 de 12 dias</strong>')!==-1,'Acumulado final deve alcançar o total anual.');
+  assertTrue_(feb.indexOf('9º dia letivo previsto:</strong> 01/07/2027')!==-1,'Marco de 75% deve preservar a data já calculada na malha.');
+  assertTrue_(feb.indexOf('Inscrições para o PROLIF 2027/1: <strong>3</strong>')!==-1,'Períodos diversos devem permanecer visíveis.');
+  assertEquals_(2,(feb.match(/Aula inaugural CENID: <strong>1<\/strong>/g)||[]).length,'Registros com título igual não podem ser agrupados nem removidos.');
+  const allMonths=[];for(let month=1;month<=12;month++)allMonths.push('2027-'+('0'+month).slice(-2));
+  const annualPage=schoolDayFootnoteHtml_(school,allMonths,fixture.types);
+  assertEquals_(15,compactSchoolDayFooterRows_(annualPage).length,'Página anual deve manter 12 meses, dois semestres e um ano.');
+  assertTrue_(annualPage.indexOf('--school-summary-columns:2')!==-1,'Muitos resumos devem dividir a largura disponível para reduzir a altura.');
+  assertTrue_(annualPage.indexOf('jul/2027 · acum. 9')!==-1,'Cada mês de uma página com vários meses deve informar seu acumulado.');
+  assertEquals_(before,JSON.stringify(fixture),'A apresentação não pode modificar a malha nem os períodos.');
+  school.dates.unshift('2026-12-31','2027-02-01');
+  assertTrue_(footer('2027-02').indexOf('Acumulados até fev/2027: <strong>8 de 12 dias</strong>')!==-1,'Acumulado deve excluir outros anos e não duplicar datas.');
+  school.periods[3].title='<img src=x onerror=alert(1)>';
+  assertFalse_(footer('2027-02').indexOf('<img src=x')!==-1,'Descrições de períodos devem ser escapadas.');
+}
+
+function testCompactSchoolDayFooterSurfaceParity_() {
+  const html=HtmlService.createHtmlOutputFromFile('index').getContent();
+  const start=html.indexOf('function schoolDayFootnoteHtml_('),end=html.indexOf('function fillSchoolDayMonthSummary(',start);
+  assertTrue_(start>=0&&end>start,'Mesa deve disponibilizar o renderizador puro do rodapé.');
+  const client=Function('return ('+html.slice(start,end).trim()+');')();
+  const fixture=compactSchoolDayFooterFixture_();
+  [['2027-02'],['2027-03'],['2027-07'],['2027-12'],['2027-02','2027-03','2027-07','2027-12']].forEach(function(months){
+    assertEquals_(schoolDayFootnoteHtml_(fixture.school,months,fixture.types),client(fixture.school,months,fixture.types),'Mesa e Prévia/PDF devem renderizar as mesmas contagens.');
+  });
+  assertTrue_(html.indexOf('schoolDayFootnoteHtml_(model,[key],state.calendarEventTypes||[])')!==-1,'Visão mensal deve usar o resumo compacto.');
+  assertTrue_(html.indexOf('schoolDayFootnoteHtml_(state.schoolDayModel,months,state.calendarEventTypes||[])')!==-1,'Visões de semestre e ano devem usar o mesmo resumo.');
+}
+
+function testCompactSchoolDayFooterPageScope_() {
+  const fixture=compactSchoolDayFooterFixture_(),theme=Object.assign({},DEFAULT_THEMES[0],{logoUrl:'',monthsPerPage:2});
+  const monthKeys=['2027-02','2027-03','2027-07','2027-12'];
+  const months=monthKeys.map(function(key){return buildPreviewMonth_(Number(key.slice(0,4)),Number(key.slice(5,7)),[],fixture.school,{holidays:[],occurrences:[]},[],theme,{});});
+  const result=buildPrintPages_({title:'Calendário 2027'},theme,false,'',months,2,2,1,previewPrintProfile_(theme,months),fixture.school,fixture.types);
+  result.pages.forEach(function(page){
+    const footer=page.slice(page.indexOf('<footer'));
+    const firstGroup=page.indexOf('data-school-month="2027-02"')!==-1;
+    const rows=compactSchoolDayFooterRows_(footer);
+    const expected=firstGroup?'2027-02,2027-03':'2027-07,2027-12';
+    assertEquals_(expected,rows.filter(function(row){return row.kind==='month';}).map(function(row){return row.month;}).join(','),'Cada rodapé deve conter somente os meses da própria página.');
+    assertTrue_(footer.indexOf('Dias Letivos por período letivo:')!==-1,'Lista diagnóstica deve permanecer em todas as páginas.');
+  });
+  assertTrue_(result.pages.length>=2,'Teste deve exercer mais de uma página.');
 }
 
 

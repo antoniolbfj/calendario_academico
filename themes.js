@@ -714,7 +714,15 @@ function printPageChromeMetrics_(calendar, theme, immutable, printProfile, schoo
     footerInnerMm+=printEstimatedLineCount_(theme.footerText,contentWidthMm,7)*7*0.352778*1.2;
   }
   if(String(schoolFootnote||'').trim()){
-    footerInnerMm+=.8+(printEstimatedLineCount_(schoolFootnote,contentWidthMm,5.5)*5.5*0.352778*1.2);
+    const grids=schoolFootnote.match(/<table class="school-day-counts"[\s\S]*?<\/table>/g);
+    if(grids){
+      const rowCount=Math.max.apply(null,grids.map(function(grid){return (grid.match(/<tr\b/g)||[]).length;}));
+      const details=schoolFootnote.replace(/<table class="school-day-counts"[\s\S]*?<\/table>/g,'');
+      footerInnerMm+=1.5+rowCount*(7*0.352778*1.2+.7)+
+        printEstimatedLineCount_(details,contentWidthMm,7)*7*0.352778*1.2+1;
+    }else{
+      footerInnerMm+=.8+(printEstimatedLineCount_(schoolFootnote,contentWidthMm,5.5)*5.5*0.352778*1.2);
+    }
   }
   if(opts.eventPageNumber){
     footerInnerMm+=1+(6*0.352778*1.2);
@@ -990,20 +998,94 @@ function printEventFlowEntryHtml_(row) {
   return '<div class="print-event-entry">'+(row.markerHtml||'')+'<time>'+row.dateHtml+'</time><span>'+row.titleHtml+'</span></div>';
 }
 
-function schoolDayFootnoteHtml_(school) {
+// Renderizador puro, também usado na Mesa em index.html. Não modifica a malha.
+function schoolDayFootnoteHtml_(school, monthKeys, eventTypes) {
   if(!school || !school.configured || !Number(school.completePeriods||0)) return '';
   const monthNames=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
-  const months=Object.keys(school.byMonth||{}).sort().map(function(key){
-    const parts=key.split('-');return monthNames[Number(parts[1]||1)-1]+'/'+parts[0]+': '+Number(school.byMonth[key]||0);
+  const labels=['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
+  function escape_(value){return String(value===undefined||value===null?'':value).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+  function validDate_(iso){
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(String(iso||'')))return false;
+    const d=new Date(iso+'T00:00:00Z');
+    return !isNaN(d.getTime())&&d.toISOString().slice(0,10)===iso;
+  }
+  function datePt_(iso){return validDate_(iso)?iso.slice(8,10)+'/'+iso.slice(5,7)+'/'+iso.slice(0,4):'—';}
+  function monthLabel_(key){return monthNames[Number(key.slice(5,7))-1]+'/'+key.slice(0,4);}
+  const uniqueDates={};
+  (school.dates||[]).forEach(function(iso){if(validDate_(iso))uniqueDates[iso]=true;});
+  const dates=Object.keys(uniqueDates).sort();
+  const uniqueMonths={};
+  const requested=Array.isArray(monthKeys)&&monthKeys.length?monthKeys:Object.keys(school.byMonth||{});
+  requested.forEach(function(key){if(/^\d{4}-(0[1-9]|1[0-2])$/.test(String(key||'')))uniqueMonths[key]=true;});
+  const months=Object.keys(uniqueMonths).sort();
+  const typeCodes={};
+  (eventTypes||[]).forEach(function(type){typeCodes[type.id]=String(type.code||'').toUpperCase();});
+  const periods=(school.periods||[]).filter(function(period){return period.complete;});
+  function code_(period){return String(period.eventTypeCode||typeCodes[period.eventTypeId]||'').toUpperCase();}
+  function count_(from,to){
+    const weekdays=[0,0,0,0,0,0,0];let total=0;
+    dates.forEach(function(iso){if(iso>=from&&iso<=to){weekdays[(new Date(iso+'T00:00:00Z').getUTCDay()+6)%7]++;total++;}});
+    return {weekdays:weekdays,total:total};
+  }
+  function row_(label,kind,from,to,key){
+    const count=count_(from,to);
+    return '<tr data-school-summary-kind="'+kind+'" data-school-summary-month="'+key+'"><th scope="row">'+escape_(label)+'</th>'+
+      count.weekdays.map(function(n){return '<td>'+n+'</td>';}).join('')+'<td><strong>'+count.total+'</strong></td></tr>';
+  }
+  const yearEndMonths={};
+  months.forEach(function(key){
+    const year=key.slice(0,4);
+    if(yearEndMonths[year])return;
+    const yearDates=dates.filter(function(iso){return iso.slice(0,4)===year;});
+    const endings=periods.filter(function(p){return code_(p)==='PERIODO_LETIVO_ANUAL'&&validDate_(p.endDate)&&p.endDate.slice(0,4)===year;}).map(function(p){return p.endDate;});
+    if(yearDates.length)endings.push(yearDates[yearDates.length-1]);
+    yearEndMonths[year]=endings.length?endings.sort().pop().slice(0,7):year+'-12';
   });
-  const periods=(school.periods||[]).filter(function(period){return period.complete;}).map(function(period){
-    return escapeHtml_(period.title)+': '+Number(period.schoolDayCount||0);
+  const rows=[];
+  months.forEach(function(key){
+    const accumulated=months.length>1?' · acum. '+count_(key.slice(0,4)+'-01-01',key+'-31').total:'';
+    rows.push(row_(monthLabel_(key)+accumulated,'month',key+'-01',key+'-31',key));
+    periods.forEach(function(period){
+      const code=code_(period);
+      if((code==='PERIODO_LETIVO_1_SEMESTRE'||code==='PERIODO_LETIVO_2_SEMESTRE')&&validDate_(period.startDate)&&validDate_(period.endDate)&&period.endDate.slice(0,7)===key){
+        rows.push(row_(code==='PERIODO_LETIVO_1_SEMESTRE'?'1º semestre':'2º semestre','semester',period.startDate,period.endDate,key));
+      }
+    });
+    const year=key.slice(0,4);
+    if(yearEndMonths[year]===key)rows.push(row_('Ano de '+year,'year',year+'-01-01',year+'-12-31',key));
   });
-  function datePt_(iso){return isIsoDate_(iso)?iso.slice(8,10)+'/'+iso.slice(5,7)+'/'+iso.slice(0,4):'—';}
-  return '<div class="school-day-footnote"><strong>Dias letivos por mês:</strong> '+escapeHtml_(months.join(' · '))+
-    '<br><strong>Dias Letivos por período letivo:</strong> '+(periods.length?periods.join(' · '):'—')+
-    '<br><strong>Total de dias letivos anuais:</strong> '+Number(school.total||0)+
-    '<br><strong>75% dos dias letivos anuais previstos em:</strong> '+escapeHtml_(datePt_(school.seventyFivePercentDate||''))+'</div>';
+  const lastMonths={};
+  months.forEach(function(key){lastMonths[key.slice(0,4)]=key;});
+  const accumulated=Object.keys(lastMonths).sort().map(function(year){
+    const key=lastMonths[year],count=count_(year+'-01-01',key+'-31'),annual=count_(year+'-01-01',year+'-12-31');
+    return '<span>Acumulados até '+monthLabel_(key)+': <strong>'+count.total+' de '+annual.total+' dias</strong></span>';
+  });
+  const milestone='<span><strong>75% — '+Math.ceil(Number(school.total||0)*.75)+'º dia letivo previsto:</strong> '+datePt_(school.seventyFivePercentDate||'')+'</span>';
+  const periodItems=periods.map(function(period){return escape_(period.title)+': <strong>'+Number(period.schoolDayCount||0)+'</strong>';});
+  const columns=rows.length>6?2:1,chunkSize=Math.ceil(rows.length/columns),tables=[];
+  for(let i=0;i<rows.length;i+=chunkSize){
+    tables.push('<table class="school-day-counts" aria-label="Dias letivos por dia da semana"><thead><tr><th scope="col">Dias letivos</th>'+labels.map(function(label){return '<th scope="col">'+label+'</th>';}).join('')+'<th scope="col">Total</th></tr></thead><tbody>'+rows.slice(i,i+chunkSize).join('')+'</tbody></table>');
+  }
+  const grid='<div class="school-day-counts-grid" style="--school-summary-columns:'+columns+'">'+tables.join('')+'</div>';
+  return '<div class="school-day-footnote">'+grid+'<div class="school-day-meta">'+accumulated.concat([milestone]).join(' · ')+'</div>'+
+    '<div class="school-day-periods"><strong>Dias Letivos por período letivo:</strong> '+(periodItems.join(' · ')||'—')+'</div></div>';
+}
+
+function schoolDayFootnoteCss_() {
+  return '.school-day-footnote{font-size:7pt!important;line-height:1.2;white-space:normal;color:inherit}'+
+    '.school-day-counts-grid{display:grid;grid-template-columns:repeat(var(--school-summary-columns,1),minmax(0,1fr));gap:3mm;align-items:start}'+
+    '.school-day-footnote .school-day-counts{width:100%;border-collapse:collapse;table-layout:fixed;margin:0 0 .7mm;font-size:inherit}'+
+    '.school-day-footnote .school-day-counts th,.school-day-footnote .school-day-counts td{height:auto!important;min-height:0;padding:.35mm .8mm!important;border:0;border-bottom:1px solid #8884;font-size:inherit!important;line-height:1.2;text-align:right;vertical-align:middle;background:transparent;overflow:visible;white-space:nowrap}'+
+    '.school-day-footnote .school-day-counts th:first-child{width:36%;text-align:left;white-space:normal}'+
+    '.school-day-footnote .school-day-counts thead th{font-weight:700}'+
+    '.school-day-footnote .school-day-counts tr[data-school-summary-kind="semester"],.school-day-footnote .school-day-counts tr[data-school-summary-kind="year"]{font-weight:700}'+
+    '.school-day-footnote .school-day-meta,.school-day-footnote .school-day-periods{margin-top:.5mm;overflow-wrap:anywhere}';
+}
+
+function schoolDayFootnoteForMonths_(school, monthHtmlList, eventTypes) {
+  const keys=[];
+  (monthHtmlList||[]).forEach(function(html){const match=/data-school-month="(\d{4}-\d{2})"/.exec(html);if(match)keys.push(match[1]);});
+  return schoolDayFootnoteHtml_(school,keys,eventTypes);
 }
 
 function printEventsFlowPageShell_(calendar, theme, immutable, logo, printProfile, columnsHtml, columnCount, pageIndex, totalPages, schoolFootnote) {
@@ -1107,13 +1189,13 @@ function printAdaptationMessage_(adaptation) {
   return 'A composição originalmente escolhida precisou ser adaptada no PDF: o sistema '+details.join('; ')+'. O ajuste preserva a legibilidade e garante a exibição integral do conteúdo.';
 }
 
-function buildPrintPages_(calendar, theme, immutable, logo, months, pageSize, columns, rowsPerPage, printProfile, school) {
-  const schoolFootnote=schoolDayFootnoteHtml_(school);
-  const chrome=printPageChromeMetrics_(calendar,theme,immutable,printProfile,schoolFootnote);
+function buildPrintPages_(calendar, theme, immutable, logo, months, pageSize, columns, rowsPerPage, printProfile, school, eventTypes) {
   const pages=[];
   const adaptation={applied:false,level:0,grouped:false,separated:false,columns:false,columnsUsed:1,additionalPages:false,additionalPageCount:0,message:''};
   for(let i=0;i<months.length;i+=pageSize) {
     const group=months.slice(i,i+pageSize);
+    const schoolFootnote=schoolDayFootnoteForMonths_(school,group,eventTypes);
+    const chrome=printPageChromeMetrics_(calendar,theme,immutable,printProfile,schoolFootnote);
     const originalFit=printFitAssessment_(theme,group,printProfile,chrome);
     if(originalFit.fits) {
       pages.push(printPageShell_(calendar,theme,immutable,logo,pageSize,columns,rowsPerPage,printProfile,group,'combined',originalFit,schoolFootnote));
@@ -1212,7 +1294,7 @@ function buildLivePreviewHtml_(calendarId, themeId, outputMode, includeMetadata,
   const printProfile = previewPrintProfile_(theme, months);
   const logo = theme.logoUrl ? '<img class="inst-logo" src="'+escapeHtml_(theme.logoUrl)+'" alt="Logo institucional">' : '';
   throwIfOperationCancelled_(progressToken);
-  const printResult=buildPrintPages_(calendar,theme,immutable,logo,months,pageSize,columns,rowsPerPage,printProfile,school);
+  const printResult=buildPrintPages_(calendar,theme,immutable,logo,months,pageSize,columns,rowsPerPage,printProfile,school,eventTypes);
   throwIfOperationCancelled_(progressToken);
 
   const bgStyle = theme.backgroundMode === 'IMAGE' && theme.backgroundValue
@@ -1226,7 +1308,7 @@ function buildLivePreviewHtml_(calendarId, themeId, outputMode, includeMetadata,
   const adaptation=printResult.adaptation||{applied:false,level:0,message:''};
   const adaptationNotice='<div id="pdfAdaptationNotice" data-applied="'+(adaptation.applied?'true':'false')+'" data-level="'+Number(adaptation.level||0)+'" data-message="'+escapeHtml_(adaptation.message||'')+'" hidden></div>';
   const html='<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'+
-    '<title>'+escapeHtml_(calendar.title)+' — Prévia do calendário</title><style>'+previewCss_(theme, printProfile)+previewThemeContractCss_(theme)+'</style></head>'+
+    '<title>'+escapeHtml_(calendar.title)+' — Prévia do calendário</title><style>'+previewCss_(theme, printProfile)+previewThemeContractCss_(theme)+schoolDayFootnoteCss_()+'</style></head>'+
     '<body class="'+(pdfMode?'pdf-output':'screen-output')+'" style="'+bgStyle+'">'+adaptationNotice+renderDocument+screenFitScript+'</body></html>';
   return includeMetadata?{html:html,adaptation:adaptation}:html;
 }
@@ -1380,7 +1462,7 @@ function buildPreviewMonth_(year, month, events, school, holidayData, exceptions
   const list = '<div class="event-list" data-event-count="'+monthEvents.length+'" data-event-lines="'+weightedEventLines+'" data-event-scale="'+listScale.toFixed(4)+'" style="--event-font:'+eventFont+'px;--event-gap:'+eventGap+'px'+listScaleStyle+'"><h3>Eventos do mês</h3>'+(monthEvents.length?'<ul>'+monthEvents.map(function(item){return '<li><i class="event-mark" style="background-color:'+escapeHtml_(item.color)+';border:2px solid '+escapeHtml_(item.color)+';-webkit-print-color-adjust:exact;print-color-adjust:exact"></i><time>'+escapeHtml_(item.dateLabel)+'</time><span>'+escapeHtml_(item.title)+'</span></li>';}).join('')+'</ul>':'<p>Nenhum evento neste mês.</p>')+'</div>';
   const total = Number((school.byMonth||{})[monthKey]||0);
   const totalHtml='<div class="month-total"><i class="school-total-dot" aria-hidden="true"></i>Total de dias letivos: <strong>'+total+'</strong></div>';
-  return '<article class="month event-count-'+Math.min(99,monthEvents.length)+'" data-event-count="'+monthEvents.length+'"><div class="month-title"><h2>'+monthNames[month-1]+' '+year+'</h2>'+(theme.monthlyTotalPosition==='BELOW_TITLE'?totalHtml:'')+'</div>'+ 
+  return '<article class="month event-count-'+Math.min(99,monthEvents.length)+'" data-school-month="'+monthKey+'" data-event-count="'+monthEvents.length+'"><div class="month-title"><h2>'+monthNames[month-1]+' '+year+'</h2>'+(theme.monthlyTotalPosition==='BELOW_TITLE'?totalHtml:'')+'</div>'+
     '<div class="month-layout '+layoutMode+'"><div class="calendar-box">'+table+(theme.monthlyTotalPosition==='AFTER_TABLE'?totalHtml:'')+'</div>'+list+'</div></article>';
 }
 
