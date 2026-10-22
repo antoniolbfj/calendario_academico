@@ -240,6 +240,7 @@ function getSystemTests_() {
     testCompactSchoolDayFooterCounts_,
     testCompactSchoolDayFooterSurfaceParity_,
     testCompactSchoolDayFooterPageScope_,
+    testMonthlyTablesOmitLegacySchoolDayFooter_,
     testUx1ModalArchitectureContract_,
     testUx2EventTypeFocusedCrudContract_,
     testUx3ThemeFocusedCrudContract_,
@@ -4658,6 +4659,21 @@ function testCompactSchoolDayFooterPageScope_() {
     assertTrue_(footer.indexOf('Dias Letivos por período letivo:')!==-1,'Lista diagnóstica deve permanecer em todas as páginas.');
   });
   assertTrue_(result.pages.length>=2,'Teste deve exercer mais de uma página.');
+}
+
+function testMonthlyTablesOmitLegacySchoolDayFooter_() {
+  const fixture=compactSchoolDayFooterFixture_(),before=JSON.stringify(fixture);
+  ['FIRST','LAST'].forEach(function(position){
+    const theme=Object.assign({},DEFAULT_THEMES[0],{showWeeklyTotals:true,weeklyTotalsPosition:position});
+    const html=buildPreviewMonth_(2027,2,[],fixture.school,{holidays:[],occurrences:[]},[],theme,{});
+    assertFalse_(html.indexOf('class="weekly"')!==-1,'A tabela mensal não deve repetir o rodapé semanal legado, mesmo na posição '+position+'.');
+    assertFalse_(html.indexOf('weekday-totals')!==-1||html.indexOf('S1=')!==-1,'Contagens antigas devem sair da grade mensal.');
+    assertEquals_(28,(html.match(/class="day-number"/g)||[]).length,'Todos os dias de fevereiro devem permanecer na tabela.');
+    assertEquals_(8,(html.match(/<td class="school /g)||[]).length,'Marcadores dos dias letivos devem permanecer intactos.');
+  });
+  const footer=schoolDayFootnoteHtml_(fixture.school,['2027-02'],fixture.types);
+  assertEquals_('2,1,1,1,1,1,1,8',compactSchoolDayFooterRows_(footer)[0].values.join(','),'O rodapé consolidado deve preservar as contagens por dia da semana.');
+  assertEquals_(before,JSON.stringify(fixture),'A remoção visual não pode alterar os dados letivos.');
 }
 
 

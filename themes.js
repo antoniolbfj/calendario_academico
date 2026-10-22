@@ -1403,7 +1403,6 @@ function buildPreviewMonth_(year, month, events, school, holidayData, exceptions
     }).join('')+(allItems.length>2?'<span class="preview-day-more" title="Mais '+(allItems.length-2)+' evento(s)">+'+(allItems.length-2)+'</span>':'')+'</div>';
   }
 
-  const weekdayCounts = [0,0,0,0,0,0,0];
   const cells = [];
   for (let i=0;i<start.getUTCDay();i++) cells.push('<td class="empty'+(i===0||i===6?' weekend':'')+'"></td>');
   for (let day=1;day<=end.getUTCDate();day++) {
@@ -1412,30 +1411,13 @@ function buildPreviewMonth_(year, month, events, school, holidayData, exceptions
     const allItems = dayItems[iso] || [];
     const marks = cellEventMarks_(allItems);
     const dayOfWeek=new Date(Date.UTC(year,month-1,day)).getUTCDay();
-    if (letivo) weekdayCounts[dayOfWeek]++;
     cells.push('<td class="'+(letivo?'school ':'')+(dayOfWeek===0||dayOfWeek===6?'weekend':'')+'"><div class="day-number"><span>'+day+'</span>'+(letivo?'<i title="Dia letivo"></i>':'')+'</div>'+marks+'</td>');
   }
   while (cells.length % 7) { const column=cells.length%7;cells.push('<td class="empty'+(column===0||column===6?' weekend':'')+'"></td>'); }
   const rows=[]; for(let i=0;i<cells.length;i+=7) rows.push(cells.slice(i,i+7));
 
-  const weekCounts = rows.map(function(row, idx) {
-    let count=0;
-    const firstCellIndex=idx*7-start.getUTCDay()+1;
-    for(let offset=0;offset<7;offset++) {
-      const day=firstCellIndex+offset;
-      if(day>=1 && day<=end.getUTCDate()) {
-        const iso=year+'-'+pad2_(month)+'-'+pad2_(day);
-        if((school.dates||[]).indexOf(iso)!==-1) count++;
-      }
-    }
-    return count;
-  });
-  const weekdayTotals = ['seg','ter','qua','qui','sex','sáb','dom'].map(function(label,idx){return label+'='+weekdayCounts[(idx+1)%7];}).join(' · ');
-  const weeklyRow = '<tr class="weekly"><th>Letivos</th><td colspan="6">'+weekCounts.map(function(count,idx){return 'S'+(idx+1)+'='+count;}).join(' · ')+'<div class="weekday-totals">'+weekdayTotals+'</div></td></tr>';
   const gridRows = rows.map(function(row){return '<tr>'+row.join('')+'</tr>';}).join('');
-  const table = '<table><thead><tr><th class="weekend">Dom</th><th>Seg</th><th>Ter</th><th>Qua</th><th>Qui</th><th>Sex</th><th class="weekend">Sáb</th></tr></thead><tbody>'+ 
-    (theme.showWeeklyTotals && theme.weeklyTotalsPosition==='FIRST'?weeklyRow:'')+gridRows+
-    (theme.showWeeklyTotals && theme.weeklyTotalsPosition==='LAST'?weeklyRow:'')+'</tbody></table>';
+  const table = '<table><thead><tr><th class="weekend">Dom</th><th>Seg</th><th>Ter</th><th>Qua</th><th>Qui</th><th>Sex</th><th class="weekend">Sáb</th></tr></thead><tbody>'+gridRows+'</tbody></table>';
 
   // A lista é parte obrigatória do documento impresso. A densidade tipográfica
   // pode diminuir para caber, mas o sistema nunca elimina itens nem troca a
