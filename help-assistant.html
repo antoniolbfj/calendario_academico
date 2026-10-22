@@ -1,0 +1,241 @@
+<style id="calHelpStyles">
+  :root{--cal-help-ink:#203128;--cal-help-muted:#607066;--cal-help-line:#d9e2dc;--cal-help-surface:#fff;--cal-help-soft:#f3f7f4;--cal-help-accent:#2f6f4e;--cal-help-attention:#a86608;--cal-help-shadow:0 18px 54px rgba(24,42,31,.22)}
+  .cal-help-entry{position:relative;display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:38px;padding:8px 12px;border:1px solid var(--cal-help-line);border-radius:10px;background:var(--cal-help-surface);color:var(--cal-help-ink);font:inherit;font-weight:700;cursor:pointer}
+  .cal-help-entry:hover{border-color:#9eb7a7;background:var(--cal-help-soft)}
+  .cal-help-entry:focus-visible,.cal-help-close:focus-visible,.cal-help-back:focus-visible,.cal-help-card-button:focus-visible,.cal-help-tooltip-trigger:focus-visible,.cal-help-callout-close:focus-visible,.cal-help-callout-action:focus-visible{outline:3px solid rgba(47,111,78,.24);outline-offset:2px}
+  .cal-help-entry[data-has-unread="true"]{border-color:#d9ad65;color:#714606;background:#fffaf0}
+  .cal-help-entry.cal-help-entry-context{position:fixed;z-index:2147482999;right:18px;bottom:18px;box-shadow:0 8px 26px rgba(24,42,31,.2)}
+  .cal-help-entry.cal-help-pulse{animation:calHelpPulse .72s ease-out 1}
+  .cal-help-badge{display:none;min-width:19px;height:19px;padding:0 5px;border-radius:10px;background:#a86608;color:#fff;font-size:11px;line-height:19px;text-align:center}
+  .cal-help-entry[data-has-unread="true"] .cal-help-badge{display:inline-block}
+  .cal-help-auth-entry{position:fixed;z-index:80;top:16px;right:16px;box-shadow:0 5px 18px rgba(24,42,31,.12)}
+  .cal-help-overlay{position:fixed;z-index:2147483000;inset:0;background:rgba(20,30,24,.26);opacity:0;pointer-events:none;transition:opacity .18s ease}
+  .cal-help-overlay.open{opacity:1;pointer-events:auto}
+  .cal-help-panel{position:fixed;z-index:2147483001;top:0;right:0;width:min(420px,100%);height:100dvh;background:var(--cal-help-surface);color:var(--cal-help-ink);box-shadow:var(--cal-help-shadow);transform:translateX(105%);transition:transform .22s ease;display:flex;flex-direction:column;font-family:Arial,sans-serif}
+  .cal-help-panel.open{transform:translateX(0)}
+  .cal-help-header{display:flex;align-items:center;gap:10px;padding:17px 18px;border-bottom:1px solid var(--cal-help-line);background:#fbfdfb}
+  .cal-help-heading-wrap{min-width:0;flex:1}.cal-help-eyebrow{display:block;margin-bottom:2px;color:var(--cal-help-muted);font-size:12px;font-weight:700}.cal-help-title{margin:0;font-size:20px;line-height:1.25}
+  .cal-help-close,.cal-help-back{min-width:40px;min-height:40px;border:1px solid var(--cal-help-line);border-radius:10px;background:#fff;color:var(--cal-help-ink);font:inherit;font-weight:700;cursor:pointer}
+  .cal-help-back{display:none;min-width:auto;padding:0 11px}.cal-help-back.visible{display:inline-flex;align-items:center;justify-content:center}
+  .cal-help-content{overflow:auto;padding:18px;overscroll-behavior:contain}
+  .cal-help-intro{margin:0 0 16px;color:var(--cal-help-muted);font-size:14px;line-height:1.48}
+  .cal-help-section{margin:0 0 21px}.cal-help-section:last-child{margin-bottom:0}.cal-help-section h3{margin:0 0 9px;font-size:15px}.cal-help-list{display:grid;gap:9px}
+  .cal-help-card-button{width:100%;border:1px solid var(--cal-help-line);border-radius:12px;background:#fff;padding:12px 13px;color:var(--cal-help-ink);font:inherit;text-align:left;cursor:pointer}
+  .cal-help-card-button:hover{border-color:#9eb7a7;background:var(--cal-help-soft)}
+  .cal-help-card-button strong{display:block;font-size:14px;line-height:1.34}.cal-help-card-button small{display:block;margin-top:5px;color:var(--cal-help-muted);font-size:12px;line-height:1.35}
+  .cal-help-news-card{border-color:#d9ad65;background:#fffaf0}.cal-help-news-card strong{color:#714606}
+  .cal-help-article{font-size:15px;line-height:1.58}.cal-help-article p{margin:0 0 13px}.cal-help-article ol,.cal-help-article ul{margin:0 0 15px;padding-left:23px}.cal-help-article li{margin:0 0 9px}.cal-help-article strong{font-weight:700}
+  .cal-help-role-note{margin:0 0 14px;padding:10px 11px;border-left:3px solid #d5a24e;background:#fff8e9;color:#6c4b13;font-size:13px;line-height:1.45}
+  .cal-help-news-article{display:grid;gap:13px}.cal-help-news-version{padding:14px;border:1px solid var(--cal-help-line);border-radius:12px;background:#fff}.cal-help-news-version.current{border-color:#d9ad65;background:#fffaf0}.cal-help-news-version h3{margin:0 0 4px;font-size:16px}.cal-help-news-version p{margin:0 0 10px;color:var(--cal-help-muted);font-size:13px}.cal-help-news-version ul{margin:0;padding-left:20px}.cal-help-news-version li{margin:0 0 7px;font-size:14px;line-height:1.45}
+  .cal-help-empty{padding:15px;border:1px dashed #b8c7bd;border-radius:12px;color:var(--cal-help-muted);font-size:14px;line-height:1.45}
+
+  .cal-help-title-help-wrap{display:flex;align-items:center;gap:8px;min-width:0}.cal-help-title-help-wrap h2{margin-right:0!important}
+  .cal-help-tooltip-wrap{position:relative;display:inline-flex;align-items:center;flex:0 0 auto}
+  .cal-help-tooltip-trigger{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;padding:0;border:1px solid #d5a24e;border-radius:50%;background:#fffaf0;color:#7c5008;font:700 14px/1 Arial,sans-serif;cursor:help}
+  .cal-help-tooltip{position:fixed;z-index:2147482998;top:0;left:0;width:min(310px,calc(100vw - 24px));transform:none;padding:10px 11px;pointer-events:none;border:1px solid #dfc38d;border-radius:10px;background:#fffdf7;color:#3b362c;box-shadow:0 10px 28px rgba(42,34,19,.16);font:400 12px/1.45 Arial,sans-serif;text-align:left}
+  .cal-help-tooltip[aria-hidden="true"]{display:none}.cal-help-tooltip strong{display:block;margin-bottom:3px;color:#6f4707}
+
+  .cal-help-callout{position:fixed;z-index:2147483002;width:min(360px,calc(100vw - 24px));padding:15px;border:1px solid #d9ad65;border-radius:14px;background:#fffdf7;color:var(--cal-help-ink);box-shadow:0 16px 42px rgba(39,32,18,.24);font-family:Arial,sans-serif}
+  .cal-help-callout[hidden]{display:none}.cal-help-callout-head{display:flex;align-items:flex-start;gap:10px}.cal-help-callout-copy{min-width:0;flex:1}.cal-help-callout-kicker{display:block;margin-bottom:3px;color:#8a5b0c;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em}.cal-help-callout h3{margin:0;font-size:17px;line-height:1.3}.cal-help-callout p{margin:9px 0 0;color:#4f5d54;font-size:13px;line-height:1.48}.cal-help-callout ul{margin:9px 0 0;padding-left:18px}.cal-help-callout li{margin:0 0 5px;font-size:12.5px;line-height:1.4}.cal-help-callout-close{flex:0 0 auto;width:30px;height:30px;border:1px solid var(--cal-help-line);border-radius:9px;background:#fff;color:var(--cal-help-ink);font:700 18px/1 Arial,sans-serif;cursor:pointer}.cal-help-callout-actions{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:13px;flex-wrap:wrap}.cal-help-callout-action{min-height:34px;padding:7px 11px;border:1px solid var(--cal-help-accent);border-radius:9px;background:var(--cal-help-accent);color:#fff;font:700 12px Arial,sans-serif;cursor:pointer}.cal-help-callout-check{display:flex;align-items:center;gap:7px;color:#5d665f;font-size:11.5px;line-height:1.3}.cal-help-callout[data-placement="above"]::after,.cal-help-callout[data-placement="below"]::after{content:"";position:absolute;right:28px;width:12px;height:12px;background:#fffdf7;border-left:1px solid #d9ad65;border-top:1px solid #d9ad65;transform:rotate(45deg)}.cal-help-callout[data-placement="below"]::after{top:-7px}.cal-help-callout[data-placement="above"]::after{bottom:-7px;transform:rotate(225deg)}
+
+  @keyframes calHelpPulse{0%{box-shadow:0 0 0 0 rgba(168,102,8,.34)}100%{box-shadow:0 0 0 12px rgba(168,102,8,0)}}
+  @media (max-width:620px){.cal-help-panel{width:100%;max-width:none}.cal-help-auth-entry{top:10px;right:10px}.cal-help-entry{padding:8px 10px}.cal-help-entry-label{display:none}.cal-help-entry-context .cal-help-entry-label{display:inline}.cal-help-callout{width:calc(100vw - 24px)}}
+  @media (prefers-reduced-motion:reduce){.cal-help-panel,.cal-help-overlay{transition:none}.cal-help-entry.cal-help-pulse{animation:none}}
+
+  /* R43 UX — callout e Ajuda com alvos de toque confortáveis. */
+  .cal-help-callout-close{width:40px;height:40px}.cal-help-callout-action{min-height:40px;font-size:13px}.cal-help-callout-check{font-size:12px}.cal-help-callout-check input{width:18px;height:18px}.cal-help-entry,.cal-help-close,.cal-help-back{min-height:40px}
+  @media(max-width:620px){.cal-help-callout-close{width:44px;height:44px}.cal-help-callout-action{min-height:44px}.cal-help-entry,.cal-help-close,.cal-help-back{min-height:44px}}
+</style>
+<script>
+(function(){
+  'use strict';
+  const catalog=window.CAL_HELP_CATALOG;
+  if(!catalog||!Array.isArray(catalog.topics))return;
+
+  const HELP_MODULE_RELEASE='R47';
+  const HELP_PREFS_PREFIX='CAL_HELP_PREFS_V2_';
+  const topicById=new Map(catalog.topics.map(function(item){return [item.id,item];}));
+  const news=Array.isArray(catalog.news)&&catalog.news.length?catalog.news:[
+    {id:'R41',title:'Ajuda mais clara e orientativa',date:'19/08/2026',items:['Tutoriais com mais contexto, conferência e cuidados.','Descrições rápidas nas telas de Configurações pelo ícone !.','Boas-vindas e novidades ancoradas no menu Ajuda.','Ajuda automática em mensagens de erro removida.']},
+    {id:'R40',title:'Importação e Checklist materializada',date:'19/08/2026',items:['Importação de pacotes .calproj com validação e nova versão em Rascunho.','Checklist persistente preparada para regras e tarefas de revisão.']},
+    {id:'R39',title:'Exportação de projetos',date:'19/08/2026',items:['Exportação de versões finalizadas ou publicadas para pacote .calproj.']}
+  ];
+  const surfaceTopics={
+    AUTH:['ACE'],PROJECT_CHOOSER:['ACE','PRO'],WORKSPACE:['MES','INI'],EVENTS:['EVE'],EVENT_TYPES:['TIP'],SCHOOL_DAYS:['DIA'],HOLIDAYS:['FER'],THEMES:['TEM'],PROJECTS:['PRO'],VERSIONS:['VER'],TEAM:['EQU'],USERS:['USU'],COLLABORATION:['COL'],AUDIT:['AUD'],FINALIZATION:['AUD','VER'],RECTIFICATION:['VER'],PREVIEW:['SAI','INI'],PUBLIC_AGENDA:['AGE'],PUBLIC_AGENDA_MAIL:['AGE'],OPTIONAL_FEATURES:['AGE']
+  };
+  const surfaceLabels={AUTH:'Acesso',PROJECT_CHOOSER:'Escolha do Projeto',WORKSPACE:'Mesa de trabalho',EVENTS:'Eventos',EVENT_TYPES:'Tipos de evento',SCHOOL_DAYS:'Dias letivos',HOLIDAYS:'Feriados',THEMES:'Temas',PROJECTS:'Projetos',VERSIONS:'Versões',TEAM:'Equipe do Projeto',USERS:'Usuários e acessos',COLLABORATION:'Sugestões',AUDIT:'Auditoria',FINALIZATION:'Finalização',RECTIFICATION:'Retificação',PREVIEW:'Prévia e PDF',PUBLIC_AGENDA:'Agenda Pública',PUBLIC_AGENDA_MAIL:'Comunicação da Agenda',OPTIONAL_FEATURES:'Recursos opcionais'};
+  const settingsTooltips=[
+    {titleId:'eventTypesTitle',label:'Tipos de evento',text:'Define as categorias disponíveis no calendário, suas regras de data, comportamento letivo, aparência e, quando aplicável, acompanhamento pela Checklist.'},
+    {titleId:'schoolDayTitle',label:'Dias letivos',text:'Define quais dias da semana normalmente contam como letivos dentro dos períodos letivos. Feriados e exceções podem alterar a contagem final.'},
+    {titleId:'holidaysTitle',label:'Feriados',text:'Mantém o cadastro institucional de feriados fixos e variáveis que podem afetar a contagem de dias e a exibição do calendário.'},
+    {titleId:'themesTitle',label:'Temas do Calendário',text:'Controla somente a identidade visual do calendário enquanto produto: cabeçalho, logo, cores, organização das páginas, Prévia e PDF. A Aparência da Mesa é uma preferência pessoal independente.'},
+    {titleId:'workspaceAppearanceTitle',label:'Aparência da Mesa',text:'Personaliza apenas o seu ambiente de trabalho. As mudanças aparecem imediatamente na Mesa, podem alternar entre versão clara e escura e não alteram o Tema do Calendário nem a experiência de outros usuários.'},
+    {titleId:'usersTitle',label:'Usuários e acessos',text:'Gerencia os usuários autorizados, seus perfis globais e o status de acesso ao sistema. O papel dentro de cada Projeto é tratado separadamente.'},
+    {titleId:'optionalFeaturesTitle',label:'Recursos opcionais',text:'Ativa integrações que não são necessárias para o funcionamento básico. Recursos como Agenda Pública permanecem independentes do núcleo do sistema.'}
+  ];
+  const ui={button:null,badge:null,overlay:null,panel:null,back:null,close:null,eyebrow:null,title:null,content:null,callout:null};
+  let context={authenticated:!document.getElementById('emailStep'),isPublic:false,isSuperuser:false,isAdministrator:false,memberRole:'',canEdit:false,hasProjectAccess:false,hasCalendar:false,workspaceReady:false,calendarStatus:''};
+  let view={kind:'home',id:''};
+  let returnFocus=null;
+  let calloutShownThisPage=false;
+  let calloutAcknowledgedThisPage=false;
+  let tooltipInstalled=false;
+
+  function escapeHtml(value){return String(value||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+  function simpleHash(value){let hash=2166136261;const text=String(value||'');for(let index=0;index<text.length;index++){hash^=text.charCodeAt(index);hash=Math.imul(hash,16777619);}return (hash>>>0).toString(36);}
+  function currentUserIdentity(){
+    const emailNode=document.getElementById('accountMenuEmail');
+    const email=String(emailNode&&emailNode.textContent||'').trim().toLowerCase();
+    if(email&&email.indexOf('@')>0&&email!=='e-mail não informado')return email;
+    return context.authenticated?'authenticated-user':'anonymous';
+  }
+  function installationIdentity(){return [window.location.origin||'',window.location.pathname||''].join('|');}
+  function prefsKey(){return HELP_PREFS_PREFIX+simpleHash(installationIdentity())+'_'+simpleHash(currentUserIdentity());}
+  function readPrefs(){try{const value=JSON.parse(localStorage.getItem(prefsKey())||'{}');return value&&typeof value==='object'?value:{};}catch(error){return {};}}
+  function writePrefs(next){try{const current=readPrefs();localStorage.setItem(prefsKey(),JSON.stringify(Object.assign({},current,next||{})));}catch(error){}}
+  function currentNews(){return news.find(function(item){return item.id===HELP_MODULE_RELEASE;})||news[0]||null;}
+  function hasUnseenNews(){if(!context.authenticated||calloutAcknowledgedThisPage)return false;const prefs=readPrefs();return !prefs.welcomeDismissed||prefs.lastSeenRelease!==HELP_MODULE_RELEASE;}
+  function isShown(id){
+    const node=document.getElementById(id);if(!node||node.hidden||node.getAttribute('aria-hidden')==='true')return false;
+    if(node.classList.contains('open')||node.getAttribute('role')==='dialog')return true;
+    try{return window.getComputedStyle(node).display!=='none'&&window.getComputedStyle(node).visibility!=='hidden';}catch(error){return true;}
+  }
+  function detectProjectsSurface(){
+    if(!isShown('projectsModal'))return '';
+    if(isShown('projectsPanelPublicAgenda'))return 'PUBLIC_AGENDA';
+    if(isShown('projectsPanelTeam'))return 'TEAM';
+    if(isShown('projectsPanelVersions'))return 'VERSIONS';
+    return 'PROJECTS';
+  }
+  function detectSurface(){
+    if(document.getElementById('emailStep'))return 'AUTH';
+    const projectsSurface=detectProjectsSurface();if(projectsSurface)return projectsSurface;
+    const ordered=[['publicAgendaMailModal','PUBLIC_AGENDA_MAIL'],['publicAgendaActivationModal','PUBLIC_AGENDA'],['rectificationModal','RECTIFICATION'],['finalizationModal','FINALIZATION'],['auditModal','AUDIT'],['collaborationDrawer','COLLABORATION'],['eventDrawer','EVENTS'],['themesModal','THEMES'],['holidaysModal','HOLIDAYS'],['schoolDayModal','SCHOOL_DAYS'],['eventTypesModal','EVENT_TYPES'],['usersModal','USERS'],['optionalFeaturesModal','OPTIONAL_FEATURES'],['projectChooserModal','PROJECT_CHOOSER']];
+    for(let index=0;index<ordered.length;index++){if(isShown(ordered[index][0]))return ordered[index][1];}
+    return 'WORKSPACE';
+  }
+  function currentRole(){
+    if(!context.authenticated)return 'NA';
+    if(context.isPublic)return 'PUB';
+    if(context.isSuperuser)return 'SUP';
+    if(context.isAdministrator)return 'ADM';
+    if(String(context.memberRole||'').toUpperCase()==='EDITOR')return 'EDT';
+    if(String(context.memberRole||'').toUpperCase()==='COLABORADOR')return 'COL';
+    return 'COL';
+  }
+  function eligibleTopics(prefixes){
+    const role=currentRole();
+    return catalog.topics.filter(function(topic){const prefix=topic.id.split('-')[0];return prefixes.indexOf(prefix)!==-1&&topic.roles.indexOf(role)!==-1;});
+  }
+  function updateIndicator(pulse){
+    if(!ui.button)return;const unseen=hasUnseenNews();ui.button.dataset.hasUnread=unseen?'true':'false';ui.badge.textContent=unseen?'1':'';ui.button.setAttribute('aria-label',unseen?'Abrir Ajuda. Há uma apresentação ou novidade para consultar.':'Abrir Ajuda');
+    if(pulse&&unseen){ui.button.classList.remove('cal-help-pulse');void ui.button.offsetWidth;ui.button.classList.add('cal-help-pulse');window.setTimeout(function(){ui.button&&ui.button.classList.remove('cal-help-pulse');},900);}
+  }
+  function syncEntryPlacement(){if(!ui.button)return;const surface=detectSurface();ui.button.classList.toggle('cal-help-entry-context',surface!=='WORKSPACE'&&surface!=='AUTH');if(ui.callout&&!ui.callout.hidden)positionCallout();}
+  function createUi(){
+    if(ui.button)return;
+    ui.button=document.createElement('button');ui.button.type='button';ui.button.id='calHelpButton';ui.button.className='cal-help-entry';ui.button.innerHTML='<span aria-hidden="true">?</span><span class="cal-help-entry-label">Ajuda</span><span class="cal-help-badge" aria-hidden="true"></span>';
+    ui.badge=ui.button.querySelector('.cal-help-badge');
+    const topbar=document.querySelector('.topbar-actions');
+    if(topbar){const presence=document.getElementById('presenceWrap');topbar.insertBefore(ui.button,presence||null);}else{ui.button.classList.add('cal-help-auth-entry');document.body.appendChild(ui.button);}
+    ui.overlay=document.createElement('div');ui.overlay.id='calHelpOverlay';ui.overlay.className='cal-help-overlay';ui.overlay.hidden=true;
+    ui.panel=document.createElement('aside');ui.panel.id='calHelpPanel';ui.panel.className='cal-help-panel';ui.panel.setAttribute('aria-labelledby','calHelpTitle');ui.panel.setAttribute('aria-modal','true');ui.panel.setAttribute('role','dialog');ui.panel.setAttribute('aria-hidden','true');
+    ui.panel.innerHTML='<header class="cal-help-header"><button type="button" class="cal-help-back" aria-label="Voltar">Voltar</button><div class="cal-help-heading-wrap"><span class="cal-help-eyebrow"></span><h2 class="cal-help-title" id="calHelpTitle">Ajuda</h2></div><button type="button" class="cal-help-close" aria-label="Fechar Ajuda">×</button></header><div class="cal-help-content" id="calHelpContent"></div>';
+    document.body.append(ui.overlay,ui.panel);ui.back=ui.panel.querySelector('.cal-help-back');ui.close=ui.panel.querySelector('.cal-help-close');ui.eyebrow=ui.panel.querySelector('.cal-help-eyebrow');ui.title=ui.panel.querySelector('.cal-help-title');ui.content=ui.panel.querySelector('.cal-help-content');
+    ui.button.addEventListener('click',openPanel);ui.close.addEventListener('click',closePanel);ui.back.addEventListener('click',showHome);ui.overlay.addEventListener('click',closePanel);ui.content.addEventListener('click',handleContentClick);
+    document.addEventListener('keydown',function(event){
+      if(!ui.panel.classList.contains('open'))return;
+      if(event.key==='Escape'){event.preventDefault();closePanel();return;}
+      if(event.key!=='Tab')return;
+      const focusable=Array.from(ui.panel.querySelectorAll('button:not([disabled]),a[href],summary,[tabindex]:not([tabindex="-1"])')).filter(function(node){return !node.hidden;});
+      if(!focusable.length)return;const first=focusable[0],last=focusable[focusable.length-1];
+      if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();}else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}
+    });
+    updateIndicator(false);syncEntryPlacement();installSettingTooltips();
+    const placementObserver=new MutationObserver(function(){window.requestAnimationFrame(function(){syncEntryPlacement();installSettingTooltips();});});
+    placementObserver.observe(document.body,{subtree:true,attributes:true,childList:true,attributeFilter:['hidden','aria-hidden','class']});
+    window.addEventListener('resize',function(){if(ui.callout&&!ui.callout.hidden)positionCallout();});
+  }
+  function openPanel(){closeCallout(true);returnFocus=document.activeElement;showHome();ui.overlay.hidden=false;window.requestAnimationFrame(function(){ui.overlay.classList.add('open');ui.panel.classList.add('open');ui.panel.setAttribute('aria-hidden','false');ui.close.focus();});}
+  function closePanel(){if(!ui.panel||!ui.panel.classList.contains('open'))return;ui.overlay.classList.remove('open');ui.panel.classList.remove('open');ui.panel.setAttribute('aria-hidden','true');window.setTimeout(function(){if(ui.overlay)ui.overlay.hidden=true;},230);if(returnFocus&&typeof returnFocus.focus==='function')returnFocus.focus();}
+  function setHeader(eyebrow,title,back){ui.eyebrow.textContent=eyebrow||'Calendário Acadêmico';ui.title.textContent=title||'Ajuda';ui.back.classList.toggle('visible',!!back);}
+  function cardButton(kind,id,title,detail,newsCard){return '<button type="button" class="cal-help-card-button'+(newsCard?' cal-help-news-card':'')+'" data-help-kind="'+kind+'" data-help-id="'+escapeHtml(id)+'"><strong>'+escapeHtml(title)+'</strong>'+(detail?'<small>'+escapeHtml(detail)+'</small>':'')+'</button>';}
+  function showHome(){
+    view={kind:'home',id:''};const surface=detectSurface();syncEntryPlacement();setHeader(surfaceLabels[surface]||'Calendário Acadêmico','Ajuda',false);
+    const startPrefixes=currentRole()==='NA'?['ACE']:['INI'];const start=eligibleTopics(startPrefixes).slice(0,3);const local=eligibleTopics(surfaceTopics[surface]||['MES']).filter(function(item){return start.every(function(base){return base.id!==item.id;});}).slice(0,5);
+    const latest=currentNews();
+    let html='<p class="cal-help-intro">Encontre instruções detalhadas para a tela atual e confira as novidades do sistema.</p>';
+    if(latest){html+='<section class="cal-help-section"><h3>Novidades</h3><div class="cal-help-list">'+cardButton('news',latest.id,'Novidades '+latest.id,latest.title,true)+'</div></section>';}
+    if(start.length){html+='<section class="cal-help-section"><h3>Comece por aqui</h3><div class="cal-help-list">'+start.map(function(item){return cardButton('topic',item.id,item.title,'Veja o procedimento, como conferir o resultado e os cuidados importantes.');}).join('')+'</div></section>';}
+    html+='<section class="cal-help-section"><h3>Ajuda desta tela</h3>'+(local.length?'<div class="cal-help-list">'+local.map(function(item){return cardButton('topic',item.id,item.title,item.requiresEdit&&!context.canEdit?'Você pode consultar; para executar, é preciso possuir a edição.':'Abra as instruções detalhadas.');}).join('')+'</div>':'<div class="cal-help-empty">Não há outra orientação para esta tela no momento.</div>')+'</section>';
+    ui.content.innerHTML=html;ui.content.scrollTop=0;
+  }
+  function showTopic(id){
+    const topic=topicById.get(id);if(!topic)return;view={kind:'topic',id:id};setHeader(topic.category,topic.title,true);let note='';if(topic.requiresEdit&&!context.canEdit)note='<p class="cal-help-role-note">Para executar esta função, você precisa possuir a edição do Projeto. Você ainda pode consultar a orientação e preparar os passos antes de assumir a edição.</p>';ui.content.innerHTML=note+'<article class="cal-help-article">'+topic.html+'</article>';ui.content.scrollTop=0;
+  }
+  function showNews(id){
+    const selected=id?news.find(function(item){return item.id===id;}):null;view={kind:'news',id:id||''};setHeader('Atualizações do sistema',selected?'Novidades '+selected.id:'Novidades',true);const items=selected?[selected]:news;ui.content.innerHTML='<div class="cal-help-news-article">'+items.map(function(item){return '<section class="cal-help-news-version'+(item.id===HELP_MODULE_RELEASE?' current':'')+'"><h3>'+escapeHtml(item.id)+' — '+escapeHtml(item.title)+'</h3><p>'+escapeHtml(item.date||'')+'</p><ul>'+((item.items||[]).map(function(line){return '<li>'+escapeHtml(line)+'</li>';})).join('')+'</ul></section>';}).join('')+'</div>';ui.content.scrollTop=0;writePrefs({lastSeenRelease:HELP_MODULE_RELEASE});updateIndicator(false);
+  }
+  function handleContentClick(event){const button=event.target.closest('[data-help-kind]');if(!button)return;if(button.dataset.helpKind==='topic')showTopic(button.dataset.helpId);if(button.dataset.helpKind==='news')showNews(button.dataset.helpId);}
+
+  function closeOtherTooltips(except){document.querySelectorAll('.cal-help-tooltip-wrap[data-open="true"]').forEach(function(wrap){if(wrap===except)return;wrap.dataset.open='false';const tip=wrap._calHelpTooltip;const trigger=wrap.querySelector('.cal-help-tooltip-trigger');if(tip)tip.setAttribute('aria-hidden','true');if(trigger)trigger.setAttribute('aria-expanded','false');});}
+  function positionTooltip(trigger,tip){if(!trigger||!tip||tip.getAttribute('aria-hidden')==='true')return;const margin=12,gap=8,rect=trigger.getBoundingClientRect();tip.style.width=Math.min(310,Math.max(180,window.innerWidth-margin*2))+'px';const width=tip.offsetWidth||Math.min(310,window.innerWidth-margin*2),height=tip.offsetHeight||90;let left=rect.left+(rect.width-width)/2;left=Math.max(margin,Math.min(left,window.innerWidth-width-margin));const below=window.innerHeight-rect.bottom-gap,above=rect.top-gap;let top=(below>=height||below>=above)?rect.bottom+gap:rect.top-height-gap;top=Math.max(margin,Math.min(top,window.innerHeight-height-margin));tip.style.left=Math.round(left)+'px';tip.style.top=Math.round(top)+'px';tip.dataset.placement=top<rect.top?'above':'below';}
+  function repositionOpenTooltips(){document.querySelectorAll('.cal-help-tooltip-wrap[data-open="true"]').forEach(function(wrap){positionTooltip(wrap.querySelector('.cal-help-tooltip-trigger'),wrap._calHelpTooltip);});}
+  function installSettingTooltips(){
+    let installedAny=false;
+    settingsTooltips.forEach(function(config){
+      const title=document.getElementById(config.titleId);if(!title||title.dataset.calHelpTooltipInstalled==='true')return;
+      const parent=title.parentElement;if(!parent)return;
+      const row=document.createElement('div');row.className='cal-help-title-help-wrap';parent.insertBefore(row,title);row.appendChild(title);
+      const wrap=document.createElement('span');wrap.className='cal-help-tooltip-wrap';wrap.dataset.open='false';
+      const trigger=document.createElement('button');trigger.type='button';trigger.className='cal-help-tooltip-trigger';trigger.textContent='!';trigger.setAttribute('aria-label','Sobre esta tela: '+config.label);trigger.setAttribute('aria-expanded','false');
+      const tip=document.createElement('span');tip.className='cal-help-tooltip';tip.id='calHelpTooltip_'+config.titleId;tip.setAttribute('role','tooltip');tip.setAttribute('aria-hidden','true');tip.innerHTML='<strong>'+escapeHtml(config.label)+'</strong>'+escapeHtml(config.text);
+      trigger.setAttribute('aria-describedby',tip.id);wrap.append(trigger);row.appendChild(wrap);document.body.appendChild(tip);wrap._calHelpTooltip=tip;title.dataset.calHelpTooltipInstalled='true';
+      function setOpen(open){closeOtherTooltips(open?wrap:null);wrap.dataset.open=open?'true':'false';tip.setAttribute('aria-hidden',open?'false':'true');trigger.setAttribute('aria-expanded',open?'true':'false');if(open)window.requestAnimationFrame(function(){positionTooltip(trigger,tip);});}
+      trigger.addEventListener('click',function(event){event.stopPropagation();setOpen(wrap.dataset.open!=='true');});
+      trigger.addEventListener('mouseenter',function(){setOpen(true);});wrap.addEventListener('mouseleave',function(){setOpen(false);});trigger.addEventListener('focus',function(){setOpen(true);});trigger.addEventListener('keydown',function(event){if(event.key==='Escape'){setOpen(false);trigger.blur();}});
+      installedAny=true;
+    });
+    if(installedAny&&!tooltipInstalled){tooltipInstalled=true;document.addEventListener('click',function(event){if(!event.target.closest('.cal-help-tooltip-wrap'))closeOtherTooltips(null);});window.addEventListener('resize',repositionOpenTooltips);document.addEventListener('scroll',repositionOpenTooltips,true);}
+  }
+
+  function ensureCallout(){
+    if(ui.callout)return ui.callout;const node=document.createElement('aside');node.className='cal-help-callout';node.id='calHelpCallout';node.hidden=true;node.setAttribute('role','status');node.setAttribute('aria-live','polite');document.body.appendChild(node);ui.callout=node;return node;
+  }
+  function positionCallout(){
+    const node=ui.callout;if(!node||node.hidden||!ui.button)return;const rect=ui.button.getBoundingClientRect();const margin=12;const width=node.offsetWidth||360;const height=node.offsetHeight||180;const left=Math.max(12,Math.min(window.innerWidth-width-12,rect.right-width));const placeAbove=rect.top>window.innerHeight/2&&rect.top>height+margin;node.dataset.placement=placeAbove?'above':'below';node.style.left=Math.round(left)+'px';node.style.top=Math.round(placeAbove?rect.top-height-margin:rect.bottom+margin)+'px';
+  }
+  function closeCallout(markReleaseSeen){
+    const node=ui.callout;if(!node||node.hidden)return;const checkbox=node.querySelector('[data-help-callout-optout]');if(checkbox&&checkbox.checked)writePrefs({welcomeDismissed:true,lastSeenRelease:HELP_MODULE_RELEASE});else if(markReleaseSeen||node.dataset.kind==='news')writePrefs({lastSeenRelease:HELP_MODULE_RELEASE});calloutAcknowledgedThisPage=true;node.hidden=true;updateIndicator(false);
+  }
+  function renderCallout(kind){
+    const node=ensureCallout();const latest=currentNews();const prefs=readPrefs();
+    if(kind==='welcome'){
+      node.dataset.kind='welcome';node.innerHTML='<div class="cal-help-callout-head"><div class="cal-help-callout-copy"><span class="cal-help-callout-kicker">Bem-vindo</span><h3>A Ajuda está sempre disponível aqui</h3><p>Use o menu <strong>Ajuda</strong> para encontrar instruções detalhadas da tela que você estiver usando.</p>'+(latest?'<ul>'+((latest.items||[]).slice(0,2).map(function(item){return '<li>'+escapeHtml(item)+'</li>';})).join('')+'</ul>':'')+'</div><button type="button" class="cal-help-callout-close" aria-label="Fechar">×</button></div><div class="cal-help-callout-actions"><label class="cal-help-callout-check"><input type="checkbox" data-help-callout-optout> Não mostrar boas-vindas novamente</label><button type="button" class="cal-help-callout-action">Conhecer a Ajuda</button></div>';
+    }else{
+      node.dataset.kind='news';node.innerHTML='<div class="cal-help-callout-head"><div class="cal-help-callout-copy"><span class="cal-help-callout-kicker">Novidades</span><h3>'+(latest?escapeHtml(latest.id+' — '+latest.title):'Há novidades no sistema')+'</h3>'+(latest?'<ul>'+((latest.items||[]).slice(0,3).map(function(item){return '<li>'+escapeHtml(item)+'</li>';})).join('')+'</ul>':'<p>Abra a Ajuda para consultar as mudanças desta versão.</p>')+'</div><button type="button" class="cal-help-callout-close" aria-label="Fechar">×</button></div><div class="cal-help-callout-actions"><span></span><button type="button" class="cal-help-callout-action">Ver novidades</button></div>';
+    }
+    node.querySelector('.cal-help-callout-close').addEventListener('click',function(){closeCallout(true);});
+    node.querySelector('.cal-help-callout-action').addEventListener('click',function(){const calloutKind=node.dataset.kind;closeCallout(true);returnFocus=ui.button;showHome();ui.overlay.hidden=false;window.requestAnimationFrame(function(){ui.overlay.classList.add('open');ui.panel.classList.add('open');ui.panel.setAttribute('aria-hidden','false');if(calloutKind==='news'&&latest)showNews(latest.id);ui.close.focus();});});
+    node.hidden=false;window.requestAnimationFrame(positionCallout);if(!prefs.lastSeenRelease||prefs.lastSeenRelease!==HELP_MODULE_RELEASE)updateIndicator(true);
+  }
+  function maybeShowCallout(){
+    // R47: boas-vindas/novidades só pertencem à Mesa pronta. Nunca aparecem
+    // sobre autenticação, carregamento, escolha de Projeto ou bootstrap intermediário.
+    if(calloutShownThisPage||!context.authenticated||!context.workspaceReady||!context.hasCalendar||document.getElementById('emailStep'))return;
+    if(detectSurface()!=='WORKSPACE'||!ui.button||!document.body.contains(ui.button))return;
+    const loading=document.getElementById('loading'),chooser=document.getElementById('projectChooserModal');if((loading&&!loading.classList.contains('done'))||(chooser&&!chooser.hidden))return;
+    const emailNode=document.getElementById('accountMenuEmail');if(emailNode&&String(emailNode.textContent||'').trim()==='E-mail não informado')return;
+    const prefs=readPrefs();const kind=!prefs.welcomeDismissed?'welcome':(prefs.lastSeenRelease!==HELP_MODULE_RELEASE?'news':'');if(!kind){updateIndicator(false);return;}calloutShownThisPage=true;renderCallout(kind);
+  }
+
+  // Compatibilidade deliberada com o núcleo congelado. R41 não interpreta erros automaticamente.
+  function captureAlert(){return null;}
+  function captureFeedback(){return null;}
+  function codeFromError(){return '';}
+  function setContext(next){context=Object.assign({},context,next||{});updateIndicator(false);if(ui.panel&&ui.panel.classList.contains('open')&&view.kind==='home')showHome();window.setTimeout(maybeShowCallout,180);}
+  function init(){createUi();window.setTimeout(maybeShowCallout,500);}
+  window.CalHelp={init:init,setContext:setContext,captureAlert:captureAlert,captureFeedback:captureFeedback,codeFromError:codeFromError,open:openPanel,close:closePanel,_test:{detectSurface:detectSurface,currentRole:currentRole,prefsKey:prefsKey,hasUnseenNews:hasUnseenNews,settingsTooltips:settingsTooltips.slice(),news:news.slice(),release:HELP_MODULE_RELEASE}};
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
+})();
+</script>
