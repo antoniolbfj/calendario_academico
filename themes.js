@@ -1185,12 +1185,15 @@ function buildLivePreviewHtml_(calendarId, themeId, outputMode, includeMetadata,
   eventTypes.forEach(function(type) { eventTypeMap[type.id] = type; });
   const school = materialized.schoolDayModel;
   const years = {};
+  // Somente períodos e marcações com efeito letivo definem os anos exibidos.
+  // Feriados e eventos neutros continuam visíveis nos anos selecionados.
   events.forEach(function(event) {
+    const type = eventTypeMap[event.eventTypeId];
+    if (!type || !(type.schoolPeriod || type.schoolDayEffect === 'LETIVO' || type.schoolDayEffect === 'NAO_LETIVO')) return;
     [event.startDate,event.endDate].forEach(function(iso) { if (isIsoDate_(iso)) years[iso.slice(0,4)] = true; });
   });
   (school.dates || []).forEach(function(iso) { years[iso.slice(0,4)] = true; });
   const holidayData = materialized.holidayData;
-  (holidayData.occurrences || []).forEach(function(item) { if (isIsoDate_(item.date)) years[item.date.slice(0,4)] = true; });
   if (!Object.keys(years).length) years[String(new Date().getFullYear())] = true;
 
   const months = [];

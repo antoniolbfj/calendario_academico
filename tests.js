@@ -49,6 +49,7 @@ function getSystemTests_() {
     testThemeMonthsPerPage_,
     testThemeRoleColorResolution_,
     testLivePreviewUsesTheme_,
+    testPreviewYearsFollowSchoolDayRecords_,
     testLivePreviewPagination_,
     testPv9PdfPaginationAndRepeatingFurnitureContract_,
     testThemeGeneratorContrast_,
@@ -2452,6 +2453,65 @@ function testLivePreviewUsesTheme_() {
   assertTrue_(html.indexOf('Total de dias letivos')!==-1,'Live Preview deve renderizar total mensal.');
   assertTrue_(html.indexOf('Eventos do mês')!==-1,'Live Preview deve trazer lista mensal de eventos.');
   assertTrue_(html.indexOf(theme.accentColor)!==-1,'Live Preview deve usar cores do tema.');
+}
+
+function testPreviewYearsFollowSchoolDayRecords_() {
+  const originalCalendar=getCalendarById_,originalThemes=listThemes_,originalData=getVersionMaterializedData_;
+  const theme=Object.assign({},DEFAULT_THEMES[0],{logoUrl:''});
+  const period={id:'PERIOD',eventTypeId:'PERIOD',title:'Período letivo',startDate:'2027-02-01',endDate:'2027-12-15'};
+  const neutral={id:'NEUTRAL',eventTypeId:'NEUTRAL',title:'Evento informativo preservado',startDate:'2027-03-01',endDate:''};
+  const types=[
+    {id:'PERIOD',schoolPeriod:true,schoolDayEffect:'NEUTRO',visualRole:'DESTAQUE'},
+    {id:'NEUTRAL',schoolPeriod:false,schoolDayEffect:'NEUTRO',visualRole:'PRINCIPAL'},
+    {id:'SCHOOL',schoolPeriod:false,schoolDayEffect:'LETIVO',visualRole:'PRINCIPAL'},
+    {id:'NO_SCHOOL',schoolPeriod:false,schoolDayEffect:'NAO_LETIVO',visualRole:'ATENCAO'}
+  ];
+  const annualHoliday={holidayId:'VARIABLE',year:2027,date:'2027-02-09'};
+  const scenarios=[
+    {name:'feriado de outro ano',events:[period,neutral],occurrences:[annualHoliday,{holidayId:'VARIABLE',year:2026,date:'2026-02-17'}],years:[2027]},
+    {name:'evento neutro de outro ano',events:[period,neutral,Object.assign({},neutral,{id:'OLD',startDate:'2026-12-01'})],years:[2027]},
+    {name:'marcação letiva',events:[period,{eventTypeId:'SCHOOL',title:'Dia letivo',startDate:'2026-12-01',endDate:''}],years:[2026,2027]},
+    {name:'marcação não letiva',events:[period,{eventTypeId:'NO_SCHOOL',title:'Dia não letivo',startDate:'2026-12-01',endDate:''}],years:[2026,2027]},
+    {name:'período transanual',events:[Object.assign({},period,{startDate:'2026-12-01'})],years:[2026,2027]},
+    {name:'malha letiva sem eventos',events:[],dates:['2027-02-01'],years:[2027]},
+    {name:'período com apenas data final',events:[Object.assign({},period,{startDate:'',endDate:'2027-12-15'})],years:[2027]},
+    {name:'sem registros de impacto letivo',events:[Object.assign({},neutral,{startDate:'2025-12-01'})],occurrences:[{holidayId:'VARIABLE',year:2025,date:'2025-03-04'}],years:[new Date().getFullYear()]}
+  ];
+  let data,status;
+  try {
+    getCalendarById_=function(){return {id:'PREVIEW-YEARS',title:'Calendário Acadêmico 2027',status:status,versionNumber:1};};
+    listThemes_=function(){return [theme];};
+    getVersionMaterializedData_=function(){return data;};
+    scenarios.forEach(function(scenario,index){
+      data={
+        events:scenario.events,eventTypes:types,theme:theme,
+        schoolDayModel:{dates:scenario.dates||[],byMonth:{}},schoolDayExceptions:[],
+        holidayData:{holidays:[
+          {id:'VARIABLE',name:'Feriado variável preservado',nature:'VARIAVEL',active:true},
+          {id:'FIXED',name:'Feriado fixo preservado',nature:'FIXO',active:true,month:1,day:1}
+        ],occurrences:scenario.occurrences||[annualHoliday]}
+      };
+      ['RASCUNHO','PUBLICADO'].forEach(function(versionStatus){
+        status=versionStatus;
+        ['SCREEN','PDF'].forEach(function(mode){
+          const html=buildLivePreviewHtml_('PREVIEW-YEARS',theme.id,mode);
+          const calendarMonths=(html.match(/<article class="month\b[\s\S]*?<\/article>/g)||[]).filter(function(month){return month.indexOf('<table>')!==-1;});
+          const headings=calendarMonths.map(function(month){return month.match(/<h2>[^<]+ \d{4}<\/h2>/)[0];});
+          const years=headings.map(function(heading){return Number(heading.match(/(\d{4})<\/h2>/)[1]);}).filter(function(year,i,all){return all.indexOf(year)===i;});
+          const context=scenario.name+' / '+versionStatus+' / '+mode;
+          assertEquals_(scenario.years.join(','),years.join(','),'Anos incorretos: '+context);
+          assertEquals_(scenario.years.length*12,headings.length,'Deve gerar os 12 meses de cada ano selecionado: '+context);
+          if(index===0){
+            assertTrue_(html.indexOf('Evento informativo preservado')!==-1,'Eventos neutros do ano selecionado devem continuar visíveis: '+context);
+            assertTrue_(html.indexOf('Feriado variável preservado')!==-1,'Feriados variáveis do ano selecionado devem continuar visíveis: '+context);
+            assertTrue_(html.indexOf('Feriado fixo preservado')!==-1,'Feriados fixos devem continuar visíveis: '+context);
+          }
+        });
+      });
+    });
+  } finally {
+    getCalendarById_=originalCalendar;listThemes_=originalThemes;getVersionMaterializedData_=originalData;
+  }
 }
 
 function testLivePreviewPagination_() {
