@@ -4617,7 +4617,7 @@ function testCompactSchoolDayFooterCounts_() {
   assertEquals_('3,1,2,3,1,1,1,12',decemberRows[2].values.join(','),'Anual deve contar datas únicas, sem somar períodos sobrepostos.');
   assertTrue_(july.indexOf('Acumulados até jul/2027: <strong>9 de 12 dias</strong>')!==-1,'Acumulado deve começar no primeiro dia letivo do ano.');
   assertTrue_(december.indexOf('Acumulados até dez/2027: <strong>12 de 12 dias</strong>')!==-1,'Acumulado final deve alcançar o total anual.');
-  assertTrue_(feb.indexOf('9º dia letivo previsto:</strong> 01/07/2027')!==-1,'Marco de 75% deve preservar a data já calculada na malha.');
+  assertTrue_(feb.indexOf('9º dia letivo:</strong> 01/07/2027')!==-1,'Marco de 75% deve preservar a data já calculada na malha.');
   assertTrue_(feb.indexOf('Inscrições para o PROLIF 2027/1: <strong>3</strong>')!==-1,'Períodos diversos devem permanecer visíveis.');
   assertEquals_(2,(feb.match(/Aula inaugural CENID: <strong>1<\/strong>/g)||[]).length,'Registros com título igual não podem ser agrupados nem removidos.');
   const allMonths=[];for(let month=1;month<=12;month++)allMonths.push('2027-'+('0'+month).slice(-2));

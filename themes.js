@@ -1060,7 +1060,7 @@ function schoolDayFootnoteHtml_(school, monthKeys, eventTypes) {
     const key=lastMonths[year],count=count_(year+'-01-01',key+'-31'),annual=count_(year+'-01-01',year+'-12-31');
     return '<span>Acumulados até '+monthLabel_(key)+': <strong>'+count.total+' de '+annual.total+' dias</strong></span>';
   });
-  const milestone='<span><strong>75% — '+Math.ceil(Number(school.total||0)*.75)+'º dia letivo previsto:</strong> '+datePt_(school.seventyFivePercentDate||'')+'</span>';
+  const milestone='<span><strong>75% — '+Math.ceil(Number(school.total||0)*.75)+'º dia letivo:</strong> '+datePt_(school.seventyFivePercentDate||'')+'</span>';
   const periodItems=periods.map(function(period){return escape_(period.title)+': <strong>'+Number(period.schoolDayCount||0)+'</strong>';});
   const columns=rows.length>6?2:1,chunkSize=Math.ceil(rows.length/columns),tables=[];
   for(let i=0;i<rows.length;i+=chunkSize){
