@@ -21,7 +21,7 @@ function injectFolhinhaIdentity_(content) {
   ['access','workspace','installer'].forEach(function(surface){source=source.replace('__FOLHINHA_BRAND_'+surface.toUpperCase()+'__',folhinhaSignatureHtml_(surface));});
   const head='<script>window.FOLHINHA_IDENTITY='+JSON.stringify(FOLHINHA_IDENTITY)+';</script><link rel="icon" type="image/png" href="'+FOLHINHA_IDENTITY.faviconUrl+'">';
   source=source.replace('</head>',head+'</head>');
-  return injectBeforeFinalBodyClose_(source,HtmlService.createHtmlOutputFromFile('branding').getContent());
+  return injectBeforeFinalBodyClose_(source,HtmlService.createHtmlOutputFromFile('branding-assets').getContent());
 }
 
 function folhinhaEmailHeadingHtml_() {
