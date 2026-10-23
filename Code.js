@@ -41,7 +41,7 @@ function doGet(e) {
   const html=HtmlService.createHtmlOutput(injectHelpModule_(injectFolhinhaIdentity_(authContent)))
     .setTitle(FOLHINHA_IDENTITY.name)
     .addMetaTag('viewport', 'width=device-width, initial-scale=1, viewport-fit=cover');
-  return applyFolhinhaFavicon_(html);
+  return html;
 }
 
 function showWorkspace() {

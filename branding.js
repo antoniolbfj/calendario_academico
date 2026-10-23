@@ -7,16 +7,6 @@ const FOLHINHA_IDENTITY = Object.freeze({
   faviconUrl:'https://raw.githubusercontent.com/antoniolbfj/calendario_academico/main/branding/favicon-32x32.png'
 });
 
-/** O favicon é opcional: uma rejeição do HtmlService não pode interromper o acesso. */
-function applyFolhinhaFavicon_(output) {
-  try {
-    output.setFaviconUrl(FOLHINHA_IDENTITY.faviconUrl);
-  } catch (error) {
-    console.warn('Folhinha: não foi possível aplicar o favicon. '+String(error&&error.message||error));
-  }
-  return output;
-}
-
 function folhinhaSignatureHtml_(surface) {
   const svg=function(name,classes){return '<svg class="'+classes+'" aria-hidden="true"><use href="#folhinha-'+name+'"></use></svg>';};
   if(surface==='access')return '<span class="folhinha-signature folhinha-access" role="img" aria-label="Folhinha. Seu ano toma forma.">'+svg('access','')+'</span>';
