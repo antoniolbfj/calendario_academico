@@ -343,7 +343,7 @@ function getProjectsWorkspaceData() {
 function getStartupWorkspaceData() {
   ensureSetup_();
   const access=getAccessContext_();
-  if(!access.authenticated) throw new Error('FORBIDDEN: Este e-mail não possui acesso ativo ao Calendário Acadêmico.');
+  if(!access.authenticated) throw new Error('FORBIDDEN: Este e-mail não possui acesso ativo ao Folhinha.');
   return {ok:true,version:APP_VERSION,projects:listProjects_(),user:Object.assign({email:access.email||''},access),projectInventory:getProjectInventorySummary_(),onboarding:{firstProjectDismissed:isFirstProjectOnboardingDismissed_(access)}};
 }
 

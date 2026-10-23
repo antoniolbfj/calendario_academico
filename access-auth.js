@@ -351,10 +351,10 @@ function authCodeFailureState_(challenge,now,options) {
 }
 
 function sendAuthCodeEmail_(email,principal,code) {
-  const subject='[Calendário Acadêmico] Código de acesso';
+  const subject='['+FOLHINHA_IDENTITY.name+'] Código de acesso';
   const accessLabel=principal.kind===AUTH_PRINCIPAL_KIND.PUBLIC?'acesso público':'seu acesso cadastrado';
-  const html='<div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;padding:24px;color:#243329"><h2 style="margin:0 0 14px">Acesso ao Calendário Acadêmico</h2><p>Use o código abaixo para confirmar este e-mail e liberar '+accessLabel+':</p><p style="font-size:32px;font-weight:700;letter-spacing:6px">'+code+'</p><p>O código expira em 10 minutos. Se você não solicitou este acesso, ignore a mensagem.</p></div>';
-  sendSystemHtmlEmail_(email,subject,html,'Seu código de acesso ao Calendário Acadêmico é '+code+'. Ele expira em 10 minutos.');
+  const html='<div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;padding:24px;color:#243b32">'+folhinhaEmailHeadingHtml_()+'<h2 style="margin:0 0 14px">Acesso ao Folhinha</h2><p>Use o código abaixo para confirmar este e-mail e liberar '+accessLabel+':</p><p style="font-size:32px;font-weight:700;letter-spacing:6px">'+code+'</p><p>O código expira em 10 minutos. Se você não solicitou este acesso, ignore a mensagem.</p></div>';
+  sendSystemHtmlEmail_(email,subject,html,'Seu código de acesso ao Folhinha é '+code+'. Ele expira em 10 minutos.');
 }
 
 /** Emite um único desafio ativo por e-mail; o código nunca é persistido em texto puro. */
@@ -609,7 +609,7 @@ function authenticatedRpc(method,args,accessToken,clientInstanceId) {
   const target=getAuthenticatedRpcHandler_(method);
   if(!target)throw new Error('FORBIDDEN: operação de interface não autorizada.');
   const supplied=String(accessToken||'').trim();
-  if(!supplied)throw new Error('AUTH_REQUIRED: confirme seu e-mail para acessar o Calendário Acadêmico.');
+  if(!supplied)throw new Error('AUTH_REQUIRED: confirme seu e-mail para acessar o Folhinha.');
   const progressOnly=method==='getOperationProgress'||method==='cancelOperation';
   const identity=progressOnly?validateAuthAccessTokenForProgress_(supplied):validateAuthAccessToken_(supplied);
   if(!identity)throw new Error('AUTH_REQUIRED: sua sessão expirou ou não é mais válida. Entre novamente com seu e-mail.');

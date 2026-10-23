@@ -287,7 +287,7 @@ function prepararPlanilhaInstaladora() {
     ui.alert('Preparação bloqueada',message,ui.ButtonSet.OK);
     return {ok:false,message:message};
   }
-  ui.alert('Planilha instaladora preparada','Este arquivo é o modelo original. Faça uma cópia em seu Google Drive e, na cópia, use Calendário → Instalar sistema. A instalação no modelo original é bloqueada.',ui.ButtonSet.OK);
+  ui.alert('Planilha instaladora preparada','Este arquivo é o modelo original. Faça uma cópia em seu Google Drive e, na cópia, use Folhinha → Instalar sistema. A instalação no modelo original é bloqueada.',ui.ButtonSet.OK);
   return result;
 }
 
@@ -322,7 +322,7 @@ function prepareOfficialInstallerTemplate() {
     sheet.hideRows(14);
     PropertiesService.getScriptProperties().setProperty(INSTALLER_STATE_PROPERTY,INSTALLATION_STATE.NOT_INSTALLED);
     refreshInstallerLandingSheet_();
-    ss.rename('GERADOR DE CALENDÁRIOS — INSTALADOR');
+    ss.rename('Folhinha — Instalador');
     return {ok:true,spreadsheetId:ss.getId(),distributionId:INSTALLER_DISTRIBUTION_ID};
   }finally{lock.releaseLock();}
 }
@@ -351,7 +351,7 @@ function formatInstallerLandingSheet_(ss,sheet,mode) {
 
   sheet.getRange('A1:H14').setBackground('#ffffff').setFontFamily('Arial').setFontColor('#111111');
   sheet.getRange('A1:D5').setBackground('#ffffff').setHorizontalAlignment('center').setVerticalAlignment('middle');
-  sheet.getRange('E1:H3').setValue('GERADOR DE\nCALENDÁRIOS').setBackground('#0d6028').setFontColor('#ffffff').setFontSize(22).setFontWeight('bold').setWrap(true).setHorizontalAlignment('center').setVerticalAlignment('middle');
+  sheet.getRange('E1:H3').setValue('Folhinha').setBackground('#0b4a31').setFontColor('#ffffff').setFontSize(22).setFontWeight('bold').setWrap(true).setHorizontalAlignment('center').setVerticalAlignment('middle');
   sheet.getRange('E4:H5').setValue('IFTM • Campus Uberlândia').setBackground('#0d6028').setFontColor('#e0f4e5').setFontSize(12).setHorizontalAlignment('center').setVerticalAlignment('middle');
 
   sheet.getRange('A6:H6').setValue('INSTALAÇÃO EM 4 PASSOS').setBackground('#e6f3e9').setFontColor('#0d6028').setFontSize(12).setFontWeight('bold').setHorizontalAlignment('center').setVerticalAlignment('middle').setBorder(false,false,true,false,false,false,'#b7d6bf',SpreadsheetApp.BorderStyle.SOLID);
@@ -371,6 +371,34 @@ function formatInstallerLandingSheet_(ss,sheet,mode) {
   sheet.getRange('A14:H14').clearContent().setBackground('#ffffff');
 
   installerUpsertBrandImage_(sheet);
+  installerApplyFolhinhaIdentity_(sheet);
+  return true;
+}
+
+/** Atualiza somente a identificação visual de uma planilha já preparada. */
+function atualizarIdentidadeFolhinha() {
+  const ss=SpreadsheetApp.getActiveSpreadsheet();
+  const sheet=ss&&ss.getSheetByName(INSTALLER_SHEET_NAME);
+  if(!sheet||!getInstallerTemplateId_(ss))throw new Error('A planilha instaladora precisa estar preparada.');
+  installerApplyFolhinhaIdentity_(sheet);
+  return {ok:true};
+}
+
+function installerApplyFolhinhaIdentity_(sheet) {
+  const box=installerRangePixelSize_(sheet,'E1:H3');
+  const padding=14,ratio=5115.9537/1360;
+  const width=Math.min(box.width-padding*2,(box.height-padding*2)*ratio);
+  const height=Math.round(width/ratio);
+  const blob=Utilities.newBlob(Utilities.base64Decode(FOLHINHA_INSTALLER_LOGO_PNG_BASE64),'image/png','folhinha.png');
+  const title='FOLHINHA_INSTALLER_PRODUCT';
+  const previous=(sheet.getImages()||[]).filter(function(image){return String(image.getAltTextTitle()||'')===title;});
+  // Só a imagem gerenciada do produto é substituída. IFTM e botões manuais são preservados.
+  const image=sheet.insertImage(blob,box.column,box.row,Math.round((box.width-width)/2),Math.round((box.height-height)/2));
+  image.setWidth(Math.round(width)).setHeight(height).setAltTextTitle(title).setAltTextDescription('Folhinha — Gerador de calendários institucionais.');
+  previous.forEach(function(old){old.remove();});
+  sheet.getRange('E1:H3').setValue('').setBackground(FOLHINHA_IDENTITY.colors.primary);
+  sheet.getRange('E4:H5').setBackground(FOLHINHA_IDENTITY.colors.primary);
+  sheet.getRange('A6:H6').setBackground(FOLHINHA_IDENTITY.colors.background).setFontColor(FOLHINHA_IDENTITY.colors.primary);
   return true;
 }
 
@@ -421,7 +449,7 @@ function installerUpsertActionImage_(sheet,kind,scriptName) {
   const blob=Utilities.newBlob(Utilities.base64Decode(base64),'image/png','calendar-installer-action.png');
   const box=installerRangePixelSize_(sheet,'A12:H13');
   const image=sheet.insertImage(blob,box.column,box.row,0,0);
-  image.setWidth(box.width).setHeight(box.height).setAltTextTitle(title).setAltTextDescription(kind==='OPEN'?'Abrir o Gerador de Calendários':'Instalar o Gerador de Calendários').assignScript(scriptName);
+  image.setWidth(box.width).setHeight(box.height).setAltTextTitle(title).setAltTextDescription(kind==='OPEN'?'Abrir o Folhinha':'Instalar o Folhinha').assignScript(scriptName);
   return image;
 }
 
@@ -459,8 +487,8 @@ function iniciarInstalacao() {
   const html=HtmlService.createTemplateFromFile('installer-ui');
   html.initialState=installerJsonForHtml_(state);
   SpreadsheetApp.getUi().showModalDialog(
-    html.evaluate().setWidth(940).setHeight(780),
-    'Instalar Gerador de Calendários'
+    HtmlService.createHtmlOutput(injectFolhinhaIdentity_(html.evaluate().getContent())).setWidth(940).setHeight(780),
+    'Folhinha — Instalador'
   );
 }
 

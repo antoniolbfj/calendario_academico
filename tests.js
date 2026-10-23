@@ -208,6 +208,8 @@ function getSystemTests_() {
     testInstallerMenuOrder_,
     testInstallerPreparationSafety_,
     testInstallerCopyInstallationSafety_,
+    testFolhinhaIdentityHandoff_,
+    testFolhinhaInstallerIdentityIsolation_,
     testR35InstallerCoreDefaultsContract_,
     testR36InstallerUxContract_,
     testR37OptionalFeaturesContract_,
@@ -812,6 +814,40 @@ function installerFunctionWithBindings_(fn,bindings) {
   return Function.apply(null,names.concat('return ('+String(fn)+');')).apply(null,names.map(function(name){return bindings[name];}));
 }
 
+/** A troca da tela de acesso pela Mesa mantém marca, token e título do calendário independentes. */
+function testFolhinhaIdentityHandoff_() {
+  const access=createAuthenticationHtml_().getContent();
+  const workspace=createApplicationHtml_('FOLHINHA_TEST_TOKEN').getContent();
+  [access,workspace].forEach(function(html){
+    assertFalse_(html.indexOf('__FOLHINHA_BRAND_')!==-1,'Assinatura deve estar materializada na tela.');
+    assertEquals_(1,(html.match(/id="folhinha-horizontal"/g)||[]).length,'Cada documento deve conter uma única definição de cada assinatura.');
+    assertTrue_(html.indexOf('calHelpButton')!==-1,'Ajuda deve continuar disponível.');
+  });
+  assertTrue_(access.indexOf('Seu ano toma forma.')!==-1,'Acesso deve apresentar o slogan oficial.');
+  assertTrue_(workspace.indexOf("const CAL_SERVER_BOOTSTRAP_ACCESS_TOKEN = 'FOLHINHA_TEST_TOKEN';")!==-1,'Marca não pode interferir no token de entrada.');
+  ['calendarName','calendarTitleEditor','calendarTitleInput','saveCalendarTitleBtn','cancelCalendarTitleBtn','projectVersionBadge'].forEach(function(id){
+    assertTrue_(workspace.indexOf('id="'+id+'"')!==-1,'Título editável e versão devem ser preservados: '+id+'.');
+  });
+}
+
+/** Reaplicar a marca na instaladora só toca os espaços visuais do produto. */
+function testFolhinhaInstallerIdentityIsolation_() {
+  const writes=[],removed=[];
+  const previous={getAltTextTitle:function(){return 'FOLHINHA_INSTALLER_PRODUCT';},remove:function(){removed.push('product');}};
+  const institutional={getAltTextTitle:function(){return 'CAL_INSTALLER_BRAND';},remove:function(){removed.push('institution');}};
+  const manual={getAltTextTitle:function(){return 'Botão manual';},remove:function(){removed.push('manual');}};
+  const image={setWidth:function(){return image;},setHeight:function(){return image;},setAltTextTitle:function(){return image;},setAltTextDescription:function(){return image;}};
+  const range={setValue:function(){return range;},setBackground:function(){return range;},setFontColor:function(){return range;}};
+  const update=installerFunctionWithBindings_(installerApplyFolhinhaIdentity_,{
+    installerRangePixelSize_:function(){return {width:428,height:111,row:1,column:5};},
+    FOLHINHA_INSTALLER_LOGO_PNG_BASE64:'TEST',FOLHINHA_IDENTITY:FOLHINHA_IDENTITY,
+    Utilities:{base64Decode:function(value){return value;},newBlob:function(value){return value;}}
+  });
+  update({getImages:function(){return [previous,institutional,manual];},insertImage:function(){return image;},getRange:function(a1){writes.push(a1);return range;}});
+  assertEquals_('product',removed.join(','),'Somente a assinatura gerenciada do Folhinha pode ser substituída.');
+  assertEquals_('E1:H3,E4:H5,A6:H6',writes.join(','),'Atualização visual não pode tocar botões, tabelas ou identificadores da instalação.');
+}
+
 function testInstallerMenuOrder_() {
   Object.keys(INSTALLATION_STATE).forEach(function(key){
     const entries=[],menu={addItem:function(label,handler){entries.push({label:label,handler:handler});return menu;},addSeparator:function(){return menu;},addToUi:function(){menu.added=true;}};
@@ -821,7 +857,7 @@ function testInstallerMenuOrder_() {
       getInstallationState_:function(){return INSTALLATION_STATE[key];},INSTALLATION_STATE:INSTALLATION_STATE
     });
     assertTrue_(create(),'Menu deve ser criado no estado '+key+'.');
-    assertEquals_('Calendário',menu.name,'O nome do menu deve ser estável.');
+    assertEquals_('Folhinha',menu.name,'O menu deve exibir o nome do produto.');
     assertEquals_('Preparar planilha instaladora',entries[0].label,'Preparação deve ser a primeira opção.');
     assertEquals_('prepararPlanilhaInstaladora',entries[0].handler,'Preparação deve usar o comando com orientação ao usuário.');
     assertEquals_('Instalar sistema',entries[1].label,'Instalação deve ser a segunda opção.');

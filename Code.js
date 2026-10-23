@@ -23,7 +23,7 @@ function injectHelpModule_(content) {
 
 function createAuthenticationHtml_() {
   const content=HtmlService.createHtmlOutputFromFile('auth').getContent();
-  return HtmlService.createHtmlOutput(injectHelpModule_(content));
+  return HtmlService.createHtmlOutput(injectHelpModule_(injectFolhinhaIdentity_(content)));
 }
 
 function createApplicationHtml_(accessToken) {
@@ -31,15 +31,16 @@ function createApplicationHtml_(accessToken) {
   const token=String(accessToken||'').trim();
   let content=HtmlService.createHtmlOutputFromFile('index').getContent();
   content=content.replace(marker,token);
-  return HtmlService.createHtmlOutput(injectHelpModule_(content));
+  return HtmlService.createHtmlOutput(injectHelpModule_(injectFolhinhaIdentity_(content)));
 }
 
 function doGet(e) {
   // R30: toda abertura interativa começa pela tela de autenticação própria.
   // Nenhuma Conta Google do navegador é consultada ou inferida como identidade.
   const authContent=HtmlService.createHtmlOutputFromFile('auth').getContent();
-  return HtmlService.createHtmlOutput(injectHelpModule_(authContent))
-    .setTitle('Calendário Acadêmico — acesso')
+  return HtmlService.createHtmlOutput(injectHelpModule_(injectFolhinhaIdentity_(authContent)))
+    .setTitle(FOLHINHA_IDENTITY.name)
+    .setFaviconUrl(FOLHINHA_IDENTITY.faviconUrl)
     .addMetaTag('viewport', 'width=device-width, initial-scale=1, viewport-fit=cover');
 }
 
@@ -50,13 +51,13 @@ function showWorkspace() {
     // portanto o diálogo já nasce com a área útil do workspace completo.
     .setWidth(1200)
     .setHeight(820);
-  SpreadsheetApp.getUi().showModalDialog(html, 'Calendário Acadêmico — acesso');
+  SpreadsheetApp.getUi().showModalDialog(html, 'Folhinha — acesso');
 }
 
 function getBootstrapData(calendarId) {
   ensureSetup_();
   const access = getAccessContext_();
-  if (!access.authenticated) throw new Error('FORBIDDEN: Este e-mail não possui acesso ativo ao Calendário Acadêmico.');
+  if (!access.authenticated) throw new Error('FORBIDDEN: Este e-mail não possui acesso ativo ao Folhinha.');
   const projects = listProjects_();
   // R24: a inicialização nunca escolhe Projeto automaticamente. Somente um
   // calendarId explicitamente escolhido pelo usuário materializa a Mesa.

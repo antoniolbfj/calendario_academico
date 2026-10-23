@@ -331,9 +331,9 @@ function projectImportPrimaryAuditYear_(payload){
   const years=Object.keys(counts).map(Number);if(!years.length)return new Date().getFullYear();years.sort(function(a,b){return counts[b]-counts[a]||a-b;});return years[0];
 }
 function parseProjectDistributionDocument_(content){
-  const raw=String(content||'');if(!raw.trim())throw new Error('IMPORT_FILE_EMPTY: o arquivo selecionado está vazio. Selecione um pacote .calproj exportado pelo Gerador de Calendários.');
+  const raw=String(content||'');if(!raw.trim())throw new Error('IMPORT_FILE_EMPTY: o arquivo selecionado está vazio. Selecione um pacote .calproj exportado pelo Folhinha.');
   let doc=null;try{doc=JSON.parse(raw);}catch(error){throw new Error('IMPORT_FILE_INVALID_JSON: o arquivo não contém uma estrutura .calproj legível. Nenhuma alteração foi feita.');}
-  if(String(doc.format||'')!==PROJECT_DISTRIBUTION_FORMAT)throw new Error('IMPORT_FORMAT_UNSUPPORTED: o arquivo não é um pacote de distribuição do Gerador de Calendários. Formato encontrado: '+String(doc.format||'não identificado')+'.');
+  if(String(doc.format||'')!==PROJECT_DISTRIBUTION_FORMAT)throw new Error('IMPORT_FORMAT_UNSUPPORTED: o arquivo não é um pacote de distribuição do Folhinha. Formato encontrado: '+String(doc.format||'não identificado')+'.');
   if(Number(doc.formatVersion||0)!==PROJECT_DISTRIBUTION_FORMAT_VERSION)throw new Error('IMPORT_FORMAT_VERSION_UNSUPPORTED: este sistema aceita o formato '+PROJECT_DISTRIBUTION_FORMAT_VERSION+', mas o arquivo usa a versão '+String(doc.formatVersion||'não identificada')+'. Atualize o sistema antes de tentar importar.');
   if(!doc.payload||typeof doc.payload!=='object')throw new Error('IMPORT_PAYLOAD_MISSING: o pacote não contém o bloco obrigatório de dados do calendário.');
   const expected=String(doc.integrity&&doc.integrity.payloadSha256||'').toLowerCase();const actual=projectDistributionSha256Hex_(projectDistributionCanonicalJson_(doc.payload));

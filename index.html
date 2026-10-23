@@ -4,7 +4,7 @@
   <base target="_top">
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Calendário Acadêmico</title>
+  <title>Folhinha</title>
 
   <!-- FullCalendar Standard v7.0.2: bundle gratuito; dependência fixada para builds reproduzíveis. -->
   <script src="https://cdn.jsdelivr.net/npm/fullcalendar@7.0.2/all/global.js"></script>
@@ -13,15 +13,15 @@
 
   <style>
     :root {
-      --bg: #f3f5f9;
+      --bg: #f3f7f3;
       --surface: #ffffff;
-      --surface-soft: #f8f9fc;
-      --ink: #1b1d24;
-      --muted: #707585;
+      --surface-soft: #f7faf7;
+      --ink: #243b32;
+      --muted: #5b6d63;
       --line: #e6e8ef;
-      --accent: #5965d8;
-      --accent-strong: #4651c4;
-      --accent-soft: #eef0ff;
+      --accent: #0b4a31;
+      --accent-strong: #083824;
+      --accent-soft: #e7f0e8;
       --on-ink: #ffffff;
       --danger: #b3261e;
       --danger-soft: #fff0ef;
@@ -1738,7 +1738,7 @@ body{font-size:14px}
   <div class="app" id="appRoot">
     <header class="topbar">
       <div class="brand">
-        <div class="brand-mark" aria-hidden="true">C</div>
+        __FOLHINHA_BRAND_WORKSPACE__
         <div class="brand-copy">
           <div class="brand-title-row"><div class="project-context"><div class="brand-title" id="calendarName" role="button" tabindex="0" aria-label="Título do calendário. Dê dois cliques para editar." title="Dê dois cliques para editar">Calendário</div><button class="project-version-badge" id="projectVersionBadge" type="button" title="Abrir versões do Projeto">Versão 1 · Rascunho</button></div><div class="brand-title-editor" id="calendarTitleEditor" hidden><input id="calendarTitleInput" maxlength="140" aria-label="Título do calendário"><button type="button" id="saveCalendarTitleBtn">Salvar</button><button type="button" id="cancelCalendarTitleBtn">Cancelar</button></div></div>
           <div class="brand-subtitle">Área de trabalho colaborativa</div>
@@ -2582,8 +2582,8 @@ body{font-size:14px}
             <section class="pa-activation-step">
               <div class="pa-activation-step-number">1</div>
               <div><strong>Crie o projeto no Google Cloud e registre o número</strong><p>Primeiro crie o projeto Cloud. Só depois copie o <b>Número do projeto</b> e registre-o aqui. O sistema usará esse número como referência oficial durante toda a ativação.</p>
-                <div class="pa-guide-screen"><div class="pa-guide-screen-title">Google Cloud · Novo projeto</div><div class="pa-guide-screen-body"><span class="pa-guide-label">Nome do projeto</span><div class="pa-guide-field">GERADOR DE CALENDÁRIOS</div><div class="pa-guide-row"><span class="pa-guide-label">Depois de criar, copie</span><b>Número do projeto</b></div><div class="pa-guide-callout">Exemplo: <b>316494636147</b> · somente números</div></div></div>
-                <ol class="pa-guide-list"><li>Clique em <b>Criar projeto no Google Cloud</b>.</li><li>Informe um nome, por exemplo <b>GERADOR DE CALENDÁRIOS</b>, e clique em <b>Criar</b>.</li><li>Abra o projeto criado e localize <b>Número do projeto</b>.</li><li>Copie somente o número e cole no campo abaixo.</li></ol>
+                <div class="pa-guide-screen"><div class="pa-guide-screen-title">Google Cloud · Novo projeto</div><div class="pa-guide-screen-body"><span class="pa-guide-label">Nome do projeto</span><div class="pa-guide-field">FOLHINHA</div><div class="pa-guide-row"><span class="pa-guide-label">Depois de criar, copie</span><b>Número do projeto</b></div><div class="pa-guide-callout">Exemplo: <b>316494636147</b> · somente números</div></div></div>
+                <ol class="pa-guide-list"><li>Clique em <b>Criar projeto no Google Cloud</b>.</li><li>Informe um nome, por exemplo <b>FOLHINHA</b>, e clique em <b>Criar</b>.</li><li>Abra o projeto criado e localize <b>Número do projeto</b>.</li><li>Copie somente o número e cole no campo abaixo.</li></ol>
                 <div class="pa-actions"><a class="primary-btn pa-activation-link" id="publicAgendaOpenCloudCreateBtn" href="https://console.cloud.google.com/projectcreate" target="_blank" rel="noopener">1. Criar projeto no Google Cloud</a></div>
                 <div class="pa-activation-account-value" id="publicAgendaActivationAccount">—</div>
                 <label class="pa-field"><span>Número do projeto Google Cloud</span><input id="publicAgendaCloudProjectNumber" inputmode="numeric" autocomplete="off" placeholder="Cole aqui somente os números"></label>
@@ -2625,8 +2625,8 @@ body{font-size:14px}
             <section class="pa-activation-step">
               <div class="pa-activation-step-number">6</div>
               <div><strong>Crie a implantação institucional como App da Web</strong><p>Esta implantação executa as operações da Agenda Pública. Use exatamente as opções abaixo.</p>
-                <div class="pa-guide-screen"><div class="pa-guide-screen-title">Apps Script · Nova implantação</div><div class="pa-guide-screen-body"><div class="pa-guide-path">Implantar → Nova implantação → ⚙ Selecionar tipo → <b>App da Web</b></div><div class="pa-guide-row"><span>Descrição</span><b>AGENDA PÚBLICA — GERADOR DE CALENDÁRIOS</b></div><div class="pa-guide-row"><span>Executar como</span><b>Eu</b></div><div class="pa-guide-row"><span>Quem pode acessar</span><b>Qualquer pessoa</b></div><div class="pa-guide-button">Implantar</div></div></div>
-                <ol class="pa-guide-list"><li>Clique em <b>Abrir projeto no Apps Script</b>.</li><li>No canto superior direito, clique em <b>Implantar → Nova implantação</b>.</li><li>Clique na <b>engrenagem ⚙</b> ao lado de “Selecione o tipo” e escolha <b>App da Web</b>.</li><li>Em <b>Descrição</b>, informe <b>AGENDA PÚBLICA — GERADOR DE CALENDÁRIOS</b>.</li><li>Em <b>Executar como</b>, escolha <b>Eu</b>.</li><li>Em <b>Quem pode acessar</b>, escolha <b>Qualquer pessoa</b>.</li><li>Clique em <b>Implantar</b> e autorize, se solicitado.</li></ol>
+                <div class="pa-guide-screen"><div class="pa-guide-screen-title">Apps Script · Nova implantação</div><div class="pa-guide-screen-body"><div class="pa-guide-path">Implantar → Nova implantação → ⚙ Selecionar tipo → <b>App da Web</b></div><div class="pa-guide-row"><span>Descrição</span><b>AGENDA PÚBLICA — FOLHINHA</b></div><div class="pa-guide-row"><span>Executar como</span><b>Eu</b></div><div class="pa-guide-row"><span>Quem pode acessar</span><b>Qualquer pessoa</b></div><div class="pa-guide-button">Implantar</div></div></div>
+                <ol class="pa-guide-list"><li>Clique em <b>Abrir projeto no Apps Script</b>.</li><li>No canto superior direito, clique em <b>Implantar → Nova implantação</b>.</li><li>Clique na <b>engrenagem ⚙</b> ao lado de “Selecione o tipo” e escolha <b>App da Web</b>.</li><li>Em <b>Descrição</b>, informe <b>AGENDA PÚBLICA — FOLHINHA</b>.</li><li>Em <b>Executar como</b>, escolha <b>Eu</b>.</li><li>Em <b>Quem pode acessar</b>, escolha <b>Qualquer pessoa</b>.</li><li>Clique em <b>Implantar</b> e autorize, se solicitado.</li></ol>
                 <div class="pa-actions"><a class="primary-btn pa-activation-link" id="publicAgendaOpenDeploymentsBtn" href="#" target="_blank" rel="noopener">Abrir projeto no Apps Script</a></div><small>Não é necessário copiar a URL exibida pelo Google. Se já existir uma implantação, atualize a implantação existente em Implantar → Gerenciar implantações → Editar → Versão: Nova versão.</small>
               </div>
             </section>
@@ -2773,7 +2773,7 @@ body{font-size:14px}
     }
 
     function workspaceVariantFromAccent_(accent, variant) {
-      const safe=/^#[0-9a-f]{6}$/i.test(String(accent||''))?String(accent).toLowerCase():'#5965d8';
+      const safe=/^#[0-9a-f]{6}$/i.test(String(accent||''))?String(accent).toLowerCase():FOLHINHA_IDENTITY.colors.primary;
       if(String(variant||'').toUpperCase()==='DARK'){
         const usableAccent=hexRelativeLuminance(safe)<.24?mixHex_(safe,'#ffffff',.34):safe;
         return {bg:mixHex_('#000000',safe,.14),surface:mixHex_('#000000',safe,.21),text:mixHex_('#ffffff',safe,.07),muted:mixHex_('#ffffff',safe,.34),accent:usableAccent};
@@ -2783,8 +2783,8 @@ body{font-size:14px}
     }
 
     function defaultWorkspaceAppearance_() {
-      const accent='#5965d8';
-      return {version:1,variant:'LIGHT',baseAccent:accent,LIGHT:{bg:'#f3f5f9',surface:'#ffffff',text:'#1b1d24',muted:'#707585',accent:accent},DARK:workspaceVariantFromAccent_(accent,'DARK')};
+      const accent=FOLHINHA_IDENTITY.colors.primary;
+      return {version:1,variant:'LIGHT',baseAccent:accent,LIGHT:{bg:FOLHINHA_IDENTITY.colors.background,surface:'#ffffff',text:FOLHINHA_IDENTITY.colors.ink,muted:'#5b6d63',accent:accent},DARK:workspaceVariantFromAccent_(accent,'DARK')};
     }
 
     function normalizeWorkspaceAppearance_(raw) {
@@ -3935,7 +3935,7 @@ body{font-size:14px}
     }
     function syncProjectChooserMode_(){
       const first=state.projectChooserMode==='FIRST_PROJECT';
-      el.projectChooserTitle.textContent=first?'Bem-vindo ao Gerador de Calendários':'Escolha um projeto';
+      el.projectChooserTitle.textContent=first?'Bem-vindo ao Folhinha':'Escolha um projeto';
       el.projectChooserSubtitle.textContent=first?'Esta instalação ainda não possui nenhum Projeto. Deseja criar seu primeiro projeto agora?':'Selecione o Projeto em que deseja trabalhar. O sistema não abre Projetos automaticamente.';
       el.projectChooserDismissBtn.hidden=!first;el.projectChooserActions.classList.toggle('has-secondary',first);
       el.projectChooserOpenBtn.textContent=first?'Criar primeiro projeto':'Abrir projeto';el.projectChooserOpenBtn.disabled=first?false:!String(state.startupProjectId||'');

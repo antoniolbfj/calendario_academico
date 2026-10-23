@@ -1,5 +1,5 @@
 <style id="calHelpStyles">
-  :root{--cal-help-ink:#203128;--cal-help-muted:#607066;--cal-help-line:#d9e2dc;--cal-help-surface:#fff;--cal-help-soft:#f3f7f4;--cal-help-accent:#2f6f4e;--cal-help-attention:#a86608;--cal-help-shadow:0 18px 54px rgba(24,42,31,.22)}
+  :root{--cal-help-ink:#243b32;--cal-help-muted:#607066;--cal-help-line:#d9e2dc;--cal-help-surface:#fff;--cal-help-soft:#f3f7f3;--cal-help-accent:#0b4a31;--cal-help-attention:#a86608;--cal-help-shadow:0 18px 54px rgba(24,42,31,.22)}
   .cal-help-entry{position:relative;display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:38px;padding:8px 12px;border:1px solid var(--cal-help-line);border-radius:10px;background:var(--cal-help-surface);color:var(--cal-help-ink);font:inherit;font-weight:700;cursor:pointer}
   .cal-help-entry:hover{border-color:#9eb7a7;background:var(--cal-help-soft)}
   .cal-help-entry:focus-visible,.cal-help-close:focus-visible,.cal-help-back:focus-visible,.cal-help-card-button:focus-visible,.cal-help-tooltip-trigger:focus-visible,.cal-help-callout-close:focus-visible,.cal-help-callout-action:focus-visible{outline:3px solid rgba(47,111,78,.24);outline-offset:2px}
@@ -158,10 +158,10 @@
   }
   function openPanel(){closeCallout(true);returnFocus=document.activeElement;showHome();ui.overlay.hidden=false;window.requestAnimationFrame(function(){ui.overlay.classList.add('open');ui.panel.classList.add('open');ui.panel.setAttribute('aria-hidden','false');ui.close.focus();});}
   function closePanel(){if(!ui.panel||!ui.panel.classList.contains('open'))return;ui.overlay.classList.remove('open');ui.panel.classList.remove('open');ui.panel.setAttribute('aria-hidden','true');window.setTimeout(function(){if(ui.overlay)ui.overlay.hidden=true;},230);if(returnFocus&&typeof returnFocus.focus==='function')returnFocus.focus();}
-  function setHeader(eyebrow,title,back){ui.eyebrow.textContent=eyebrow||'Calendário Acadêmico';ui.title.textContent=title||'Ajuda';ui.back.classList.toggle('visible',!!back);}
+  function setHeader(eyebrow,title,back){ui.eyebrow.textContent=eyebrow||'Folhinha';ui.title.textContent=title||'Ajuda';ui.back.classList.toggle('visible',!!back);}
   function cardButton(kind,id,title,detail,newsCard){return '<button type="button" class="cal-help-card-button'+(newsCard?' cal-help-news-card':'')+'" data-help-kind="'+kind+'" data-help-id="'+escapeHtml(id)+'"><strong>'+escapeHtml(title)+'</strong>'+(detail?'<small>'+escapeHtml(detail)+'</small>':'')+'</button>';}
   function showHome(){
-    view={kind:'home',id:''};const surface=detectSurface();syncEntryPlacement();setHeader(surfaceLabels[surface]||'Calendário Acadêmico','Ajuda',false);
+    view={kind:'home',id:''};const surface=detectSurface();syncEntryPlacement();setHeader(surfaceLabels[surface]||'Folhinha','Ajuda',false);
     const startPrefixes=currentRole()==='NA'?['ACE']:['INI'];const start=eligibleTopics(startPrefixes).slice(0,3);const local=eligibleTopics(surfaceTopics[surface]||['MES']).filter(function(item){return start.every(function(base){return base.id!==item.id;});}).slice(0,5);
     const latest=currentNews();
     let html='<p class="cal-help-intro">Encontre instruções detalhadas para a tela atual e confira as novidades do sistema.</p>';
