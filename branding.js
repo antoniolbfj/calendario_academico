@@ -4,8 +4,18 @@ const FOLHINHA_IDENTITY = Object.freeze({
   slogan:'Seu ano toma forma.',
   description:'Gerador de calendários institucionais.',
   colors:{primary:'#0b4a31',leaf:'#58a53c',ink:'#243b32',background:'#f3f7f3'},
-  faviconUrl:'https://raw.githubusercontent.com/antoniolbfj/calendario_academico/main/branding/favicon-32x32.png?v=1'
+  faviconUrl:'https://raw.githubusercontent.com/antoniolbfj/calendario_academico/main/branding/favicon-32x32.png'
 });
+
+/** O favicon é opcional: uma rejeição do HtmlService não pode interromper o acesso. */
+function applyFolhinhaFavicon_(output) {
+  try {
+    output.setFaviconUrl(FOLHINHA_IDENTITY.faviconUrl);
+  } catch (error) {
+    console.warn('Folhinha: não foi possível aplicar o favicon. '+String(error&&error.message||error));
+  }
+  return output;
+}
 
 function folhinhaSignatureHtml_(surface) {
   const svg=function(name,classes){return '<svg class="'+classes+'" aria-hidden="true"><use href="#folhinha-'+name+'"></use></svg>';};

@@ -209,6 +209,7 @@ function getSystemTests_() {
     testInstallerPreparationSafety_,
     testInstallerCopyInstallationSafety_,
     testFolhinhaIdentityHandoff_,
+    testFolhinhaFaviconDoesNotBlockAccess_,
     testFolhinhaInstallerIdentityIsolation_,
     testR35InstallerCoreDefaultsContract_,
     testR36InstallerUxContract_,
@@ -827,6 +828,36 @@ function testFolhinhaIdentityHandoff_() {
   assertTrue_(workspace.indexOf("const CAL_SERVER_BOOTSTRAP_ACCESS_TOKEN = 'FOLHINHA_TEST_TOKEN';")!==-1,'Marca não pode interferir no token de entrada.');
   ['calendarName','calendarTitleEditor','calendarTitleInput','saveCalendarTitleBtn','cancelCalendarTitleBtn','projectVersionBadge'].forEach(function(id){
     assertTrue_(workspace.indexOf('id="'+id+'"')!==-1,'Título editável e versão devem ser preservados: '+id+'.');
+  });
+}
+
+/** Uma falha no ícone opcional não pode impedir a entrega da tela de autenticação. */
+function testFolhinhaFaviconDoesNotBlockAccess_() {
+  const auth=HtmlService.createHtmlOutputFromFile('auth').getContent();
+  assertTrue_(/^https:\/\/[^?#]+\.png$/i.test(FOLHINHA_IDENTITY.faviconUrl),'HtmlService deve receber uma URL direta terminada na extensão da imagem.');
+  [false,true].forEach(function(rejected){
+    const warnings=[];
+    let attemptedUrl='',title='',viewport='';
+    const output={
+      getContent:function(){return auth;},
+      setTitle:function(value){title=value;return output;},
+      addMetaTag:function(name,value){if(name==='viewport')viewport=value;return output;},
+      setFaviconUrl:function(url){attemptedUrl=url;if(rejected)throw new Error('O tipo de imagem do ícone favicon é incompatível.');return output;}
+    };
+    const apply=installerFunctionWithBindings_(applyFolhinhaFavicon_,{
+      FOLHINHA_IDENTITY:FOLHINHA_IDENTITY,console:{warn:function(message){warnings.push(message);}}
+    });
+    const get=installerFunctionWithBindings_(doGet,{
+      HtmlService:{createHtmlOutputFromFile:function(){return {getContent:function(){return auth;}};},createHtmlOutput:function(){return output;}},
+      injectHelpModule_:function(value){return value;},injectFolhinhaIdentity_:function(value){return value;},
+      FOLHINHA_IDENTITY:FOLHINHA_IDENTITY,applyFolhinhaFavicon_:apply
+    });
+    const result=get({});
+    assertTrue_(result===output&&result.getContent().indexOf('id="sendBtn"')!==-1,'Acesso deve permanecer disponível mesmo se o Google rejeitar o ícone.');
+    assertEquals_(FOLHINHA_IDENTITY.name,title,'Título da aplicação deve ser preservado.');
+    assertTrue_(viewport.indexOf('width=device-width')!==-1,'Configuração responsiva deve ser preservada.');
+    assertEquals_(FOLHINHA_IDENTITY.faviconUrl,attemptedUrl,'Favicon deve usar a mesma URL direta nas superfícies.');
+    assertEquals_(rejected?1:0,warnings.length,'Rejeição deve ser registrada sem propagar a exceção.');
   });
 }
 

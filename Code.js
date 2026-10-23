@@ -38,10 +38,10 @@ function doGet(e) {
   // R30: toda abertura interativa começa pela tela de autenticação própria.
   // Nenhuma Conta Google do navegador é consultada ou inferida como identidade.
   const authContent=HtmlService.createHtmlOutputFromFile('auth').getContent();
-  return HtmlService.createHtmlOutput(injectHelpModule_(injectFolhinhaIdentity_(authContent)))
+  const html=HtmlService.createHtmlOutput(injectHelpModule_(injectFolhinhaIdentity_(authContent)))
     .setTitle(FOLHINHA_IDENTITY.name)
-    .setFaviconUrl(FOLHINHA_IDENTITY.faviconUrl)
     .addMetaTag('viewport', 'width=device-width, initial-scale=1, viewport-fit=cover');
+  return applyFolhinhaFavicon_(html);
 }
 
 function showWorkspace() {
